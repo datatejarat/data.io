@@ -1049,6 +1049,234 @@ function buildExcel(emp, evaluatorProf, ev, items){
   const d = new Date();
   XLSX.writeFile(wb, `کارنامه_${emp.full_name}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);
 }
+// ============================================================
+// Export All to Excel (گزارش جامع)
+// ============================================================
+async function exportAllToExcel(){
+  const btn = document.getElementById('exportAllBtn');
+
+  // فقط ارسال‌شده‌های فیلترشده
+  const candidates = filteredRows.filter(e => {
+    const ev = evaluationsMap[e.id];
+    return ev && ev.status === 'submitted';
+  });
+
+  if (!candidates.length){
+    alert('هیچ ارزیابی ارسال‌شده‌ای در فیلترهای فعلی وجود ندارد.\n\nنکته: فقط ارزیابی‌هایی که «ارسال نهایی» شده‌اند در خروجی اکسل قرار می‌گیرند.');
+    return;
+  }
+
+  const filterSummary = [];
+  const unitFilter = document.getElementById('filterUnit').value;
+  const evFilter = document.getElementById('filterEvaluator').value;
+  if (unitFilter) filterSummary.push(`واحد: ${unitFilter}`);
+  if (evFilter){
+    const p = allProfiles.find(x => x.id === evFilter);
+    if (p) filterSummary.push(`ارزیاب: ${p.full_name}`);
+  }
+  const summaryText = filterSummary.length ? `\n(${filterSummary.join(' | ')})` : '';
+
+  if (!confirm(`آیا از خروجی اکسل ${candidates.length} ارزیابی مطمئن هستید؟${summaryText}`)) return;
+
+  btn.disabled = true;
+  const origText = btn.innerHTML;
+  btn.innerHTML = '⏳ در حال آماده‌سازی...';
+
+  try {
+    // دریافت همه items در یک کوئری
+    const evalIds = candidates.map(e => evaluationsMap[e.id].id);
+    const { data: allItems, error } = await sb.from('evaluation_items')
+      .select('*')
+      .in('evaluation_id', evalIds);
+
+    if (error) throw error;
+
+    const itemsByEval = {};
+    (allItems || []).forEach(it => {
+      if (!itemsByEval[it.evaluation_id]) itemsByEval[it.evaluation_id] = [];
+      itemsByEval[it.evaluation_id].push(it);
+    });
+
+    // ============================================
+    // شیت ۱: نتایج کلی
+    // ============================================
+    const aoa = [];
+    aoa.push(['گزارش جامع ارزیابی عملکرد — BARS']);
+    aoa.push([`تاریخ خروجی: ${getTodayShamsi()}  |  تعداد کارنامه‌ها: ${candidates.length}${summaryText.replace(/\n/g,'  |  ')}`]);
+    aoa.push([]);
+
+    aoa.push([
+      'ردیف',
+      'نام و نام خانوادگی',
+      'کد پرسنلی',
+      'واحد سازمانی',
+      'عنوان شغلی',
+      'سطح سازمانی',
+      'دسته شغلی',
+      'ارزیاب (مدیر مستقیم)',
+      'دوره ارزیابی',
+      'وضعیت',
+      'عملکردی ۱',
+      'عملکردی ۲',
+      'عملکردی ۳',
+      'رفتاری ۱',
+      'رفتاری ۲',
+      'رفتاری ۳',
+      'میانگین عملکردی',
+      'میانگین رفتاری',
+      'امتیاز نهایی',
+      'نقاط قوت',
+      'حوزه‌های نیازمند بهبود',
+      'اقدامات توسعه پیشنهادی'
+    ]);
+
+    candidates.forEach((emp, idx) => {
+      const ev = evaluationsMap[emp.id];
+      const evaluatorProf = allProfiles.find(p => p.id === emp.evaluator_id);
+      const evaluatorName = evaluatorProf ? (evaluatorProf.full_name || '—') : '—';
+      const catLabel = emp.category === 'technical' ? 'فنی' : 'ستادی';
+      const items = itemsByEval[ev.id] || [];
+
+      const itemMap = {};
+      items.forEach(it => { itemMap[it.competency_key] = it; });
+
+      const getScore = (cat, i) => {
+        const ck = `${emp.category}_${cat}_${i}`;
+        const dbItem = itemMap[ck];
+        if (!dbItem) return '';
+        if (dbItem.is_na) return 'N/A';
+        if (dbItem.score) return dbItem.score;
+        return '';
+      };
+
+      aoa.push([
+        idx + 1,
+        emp.full_name || '',
+        emp.personnel_code || '',
+        emp.unit || '',
+        emp.position || '',
+        emp.job_level || '',
+        catLabel,
+        evaluatorName,
+        ev.period || '',
+        'ارسال‌شده',
+        getScore('functional', 0),
+        getScore('functional', 1),
+        getScore('functional', 2),
+        getScore('behavioral', 0),
+        getScore('behavioral', 1),
+        getScore('behavioral', 2),
+        ev.func_avg != null ? Number(ev.func_avg) : '',
+        ev.beh_avg != null ? Number(ev.beh_avg) : '',
+        ev.final_score != null ? Number(ev.final_score) : '',
+        ev.strengths || '',
+        ev.improvements || '',
+        ev.actions || ''
+      ]);
+    });
+
+    // ============================================
+    // شیت ۲: راهنمای شاخص‌ها
+    // ============================================
+    const guide = [];
+    guide.push(['راهنمای شاخص‌های ارزیابی']);
+    guide.push(['(برای درک ستون‌های «عملکردی ۱-۳» و «رفتاری ۱-۳» در شیت «نتایج کلی»)']);
+    guide.push([]);
+    guide.push(['دسته شغلی', 'عملکردی ۱', 'عملکردی ۲', 'عملکردی ۳', 'رفتاری ۱', 'رفتاری ۲', 'رفتاری ۳']);
+
+    ['technical','staff'].forEach(cat => {
+      const form = FORMS[cat];
+      const catLabel = cat === 'technical' ? 'فنی' : 'ستادی';
+      guide.push([
+        catLabel,
+        `${form.functional[0].name} (${form.functional[0].weight}٪)`,
+        `${form.functional[1].name} (${form.functional[1].weight}٪)`,
+        `${form.functional[2].name} (${form.functional[2].weight}٪)`,
+        `${form.behavioral[0].name} (${form.behavioral[0].weight}٪)`,
+        `${form.behavioral[1].name} (${form.behavioral[1].weight}٪)`,
+        `${form.behavioral[2].name} (${form.behavioral[2].weight}٪)`
+      ]);
+    });
+
+    guide.push([]);
+    guide.push(['مقیاس امتیازدهی BARS']);
+    guide.push(['۱', 'بسیار پایین‌تر از انتظار']);
+    guide.push(['۲', 'کمتر از انتظار']);
+    guide.push(['۳', 'مطابق انتظار']);
+    guide.push(['۴', 'فراتر از انتظار']);
+    guide.push(['۵', 'استثنایی / الگوی نقش']);
+    guide.push(['N/A', 'قابل ارزیابی در این دوره نبود']);
+    guide.push([]);
+    guide.push(['میانگین‌ها و امتیاز نهایی از مقیاس ۱۰۰ محاسبه شده‌اند.']);
+
+    // ============================================
+    // ساخت workbook
+    // ============================================
+    const wb = XLSX.utils.book_new();
+
+    const ws1 = XLSX.utils.aoa_to_sheet(aoa);
+    ws1['!cols'] = [
+      {wch:6},   // ردیف
+      {wch:28},  // نام
+      {wch:12},  // کد پرسنلی
+      {wch:30},  // واحد
+      {wch:30},  // عنوان شغلی
+      {wch:14},  // سطح
+      {wch:10},  // دسته
+      {wch:25},  // ارزیاب
+      {wch:14},  // دوره
+      {wch:12},  // وضعیت
+      {wch:11},  // عملکردی ۱
+      {wch:11},  // عملکردی ۲
+      {wch:11},  // عملکردی ۳
+      {wch:11},  // رفتاری ۱
+      {wch:11},  // رفتاری ۲
+      {wch:11},  // رفتاری ۳
+      {wch:14},  // میانگین عملکردی
+      {wch:14},  // میانگین رفتاری
+      {wch:12},  // امتیاز نهایی
+      {wch:42},  // نقاط قوت
+      {wch:42},  // نیازمند بهبود
+      {wch:42}   // اقدامات
+    ];
+    ws1['!merges'] = [
+      {s:{r:0,c:0}, e:{r:0,c:21}},
+      {s:{r:1,c:0}, e:{r:1,c:21}}
+    ];
+    ws1['!freeze'] = {xSplit:0, ySplit:4};
+    XLSX.utils.book_append_sheet(wb, ws1, 'نتایج کلی');
+
+    const ws2 = XLSX.utils.aoa_to_sheet(guide);
+    ws2['!cols'] = [
+      {wch:12},{wch:38},{wch:38},{wch:38},{wch:38},{wch:38},{wch:38}
+    ];
+    ws2['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:6}}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'راهنمای شاخص‌ها');
+
+    // ============================================
+    // نام فایل
+    // ============================================
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    const parts = [];
+    if (unitFilter) parts.push(unitFilter.replace(/\s+/g,'_'));
+    if (evFilter){
+      const p = allProfiles.find(x => x.id === evFilter);
+      if (p && p.full_name) parts.push(p.full_name.replace(/\s+/g,'_'));
+    }
+    const suffix = parts.length ? '_' + parts.join('_') : '_کل';
+    XLSX.writeFile(wb, `گزارش_جامع_ارزیابی${suffix}_${stamp}.xlsx`);
+
+    showToast(`✓ فایل اکسل با ${candidates.length} کارنامه دانلود شد`, 'success');
+
+  } catch (err){
+    console.error(err);
+    alert('خطا در تولید فایل اکسل: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origText;
+  }
+}
 
 // ============================================================
 // Tabs
