@@ -444,13 +444,63 @@
       </div>
 
       <div id="subtab-evaluators" class="hidden">
-        <div class="placeholder">
-          <div class="ico">👥</div>
-          <h3>داشبورد ارزیاب‌شناسی</h3>
-          <p>این داشبورد در مرحله بعدی پیاده‌سازی خواهد شد.<br>شامل: ICC، جدول تفصیلی ارزیاب‌ها، نقشه حبابی، طبقه‌بندی (آسان‌گیر/کالیبره/سخت‌گیر)</p>
-        </div>
-      </div>
+  <div class="info-box">
+    <b>ℹ️ راهنما:</b> این داشبورد نشان می‌دهد نمرات تا چه حد به ارزیاب (نه به خود فرد) بستگی دارد. طبقه‌بندی بر اساس میانگین نمرات هر ارزیاب: <b>آسان‌گیر</b> بالای ۷۵، <b>سخت‌گیر</b> زیر ۵۵، بقیه <b>کالیبره</b>.
+  </div>
 
+  <!-- ICC Hero -->
+  <div class="icc-hero" id="iccHero"></div>
+
+  <!-- Summary Cards -->
+  <div class="kpi-grid" id="evalSummaryGrid"></div>
+
+  <!-- Charts -->
+  <div class="chart-grid">
+    <div class="chart-card tall">
+      <h3>📊 میانگین نمره هر ارزیاب</h3>
+      <div class="chart-sub">خطوط مرجع: قرمز ۵۵ (سخت‌گیر)، سبز ۷۵ (آسان‌گیر)</div>
+      <div class="chart-wrap" style="height:420px"><canvas id="chartEvalMeans"></canvas></div>
+    </div>
+    <div class="chart-card tall">
+      <h3>🎯 نقشه حبابی ارزیاب‌ها</h3>
+      <div class="chart-sub">X: میانگین | Y: درصد نمرات بالای ۷۵ | اندازه: تعداد ارزیابی</div>
+      <div class="chart-wrap" style="height:420px"><canvas id="chartEvalBubble"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Detailed Table -->
+  <div class="card">
+    <div class="card-head">
+      <h2>📋 جدول تفصیلی ارزیاب‌ها</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:12.5px;color:var(--muted)" id="evalTableCount"></span>
+        <button class="btn btn-solid" id="exportEvalBtn" onclick="exportEvaluatorsExcel()" style="font-size:13px;padding:8px 14px">
+          📥 خروجی اکسل
+        </button>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div style="overflow-x:auto">
+        <table id="evalTable">
+          <thead>
+            <tr>
+              <th>رتبه</th>
+              <th>نام ارزیاب</th>
+              <th>تعداد ارزیابی</th>
+              <th>میانگین</th>
+              <th>انحراف معیار</th>
+              <th>بالای ۷۵</th>
+              <th>زیر ۶۰</th>
+              <th>شاخص سوگیری</th>
+              <th>طبقه</th>
+            </tr>
+          </thead>
+          <tbody id="evalTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
       <div id="subtab-individual" class="hidden">
         <div class="placeholder">
           <div class="ico">🎯</div>
