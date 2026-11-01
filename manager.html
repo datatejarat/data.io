@@ -209,6 +209,22 @@
   #tab-dashboard .eval-class-chip.warn{background:rgba(245,158,11,.15);color:#b45309}
 
   #tab-dashboard .eval-warn-icon{display:inline-block;margin-right:4px;color:#f59e0b;font-weight:700}
+    /* Dashboard 3: Individual styles */
+  #tab-dashboard .ind-tables-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+  #tab-dashboard .ind-tables-grid table{font-size:12.5px}
+  #tab-dashboard .ind-tables-grid th, #tab-dashboard .ind-tables-grid td{padding:8px 10px}
+  #tab-dashboard .ind-tables-grid th{font-size:11.5px}
+  #tab-dashboard .rank-chip{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11.5px;font-weight:700;white-space:nowrap}
+  #tab-dashboard .rank-chip.up{background:rgba(16,185,129,.15);color:#047857}
+  #tab-dashboard .rank-chip.down{background:rgba(239,68,68,.15);color:#dc2626}
+  #tab-dashboard .rank-chip.stay{background:#f1f5f9;color:var(--muted)}
+  #tab-dashboard .cross-badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10.5px;font-weight:700;margin-right:4px}
+  #tab-dashboard .cross-badge.up{background:rgba(16,185,129,.2);color:#047857}
+  #tab-dashboard .cross-badge.down{background:rgba(239,68,68,.2);color:#dc2626}
+
+  @media(max-width:768px){
+    #tab-dashboard .ind-tables-grid{grid-template-columns:1fr}
+  }
   #tab-dashboard #evalTableBody tr{transition:background .15s}
   #tab-dashboard #evalTableBody tr:hover{background:#f8fafc}
 
@@ -522,13 +538,71 @@
   </div>
 </div>
       <div id="subtab-individual" class="hidden">
-        <div class="placeholder">
-          <div class="ico">🎯</div>
-          <h3>داشبورد فرد در بستر تیم</h3>
-          <p>این داشبورد در مرحله بعدی پیاده‌سازی خواهد شد.<br>شامل: رتبه خام vs تعدیل، نقشه پراکندگی، جدول استعدادهای پنهان</p>
-        </div>
-      </div>
+  <div class="info-box">
+    <b>ℹ️ راهنما:</b> این داشبورد نشان می‌دهد هر فرد نسبت به هم‌تیمی‌هایش (تحت همان ارزیاب) و نسبت به کل سازمان چه جایگاهی دارد. «Δ» تفاوت نمره تعدیل‌شده با خام است — Δ مثبت یعنی فرد تحت مدیر سخت‌گیر بوده و ارزشش بالاتر از نمره خام است.
+  </div>
 
+  <div class="kpi-grid" id="indKpiGrid"></div>
+
+  <div class="chart-grid">
+    <div class="chart-card tall">
+      <h3>📈 نمره خام × اثر تعدیل</h3>
+      <div class="chart-sub">X: نمره خام | Y: Δ (تعدیل − خام) — نقاط بالای صفر = تحت مدیر سخت‌گیر | پایین صفر = تحت مدیر آسان‌گیر</div>
+      <div class="chart-wrap" style="height:340px"><canvas id="chartIndScatter"></canvas></div>
+    </div>
+    <div class="chart-card tall">
+      <h3>🏅 بیشترین تغییر رتبه</h3>
+      <div class="chart-sub">۱۵ نفر با بزرگ‌ترین جابجایی بین رتبه خام و تعدیل‌شده</div>
+      <div class="chart-wrap" style="height:340px"><canvas id="chartIndRank"></canvas></div>
+    </div>
+  </div>
+
+  <div class="ind-tables-grid">
+    <div class="card">
+      <div class="card-head"><h2>🏆 ۱۰ نفر برتر (خام)</h2></div>
+      <div class="card-body" style="padding:0">
+        <div style="overflow-x:auto"><table>
+          <thead><tr><th>#</th><th>نام</th><th>واحد</th><th>نمره خام</th></tr></thead>
+          <tbody id="tblTopRaw"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>🏆 ۱۰ نفر برتر (تعدیل‌شده)</h2></div>
+      <div class="card-body" style="padding:0">
+        <div style="overflow-x:auto"><table>
+          <thead><tr><th>#</th><th>نام</th><th>واحد</th><th>تعدیل‌شده</th></tr></thead>
+          <tbody id="tblTopAdjusted"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>💎 استعدادهای پنهان</h2>
+        <span style="font-size:11.5px;color:var(--muted)">عبور از مرز ۶۰ یا ۷۵ با تعدیل</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div style="overflow-x:auto"><table>
+          <thead><tr><th>نام</th><th>ارزیاب</th><th>خام</th><th>تعدیل</th><th>Δ</th></tr></thead>
+          <tbody id="tblHidden"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>⚠️ نیازمند توجه</h2>
+        <span style="font-size:11.5px;color:var(--muted)">افت از مرز ۷۵ یا ۶۰ با تعدیل</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div style="overflow-x:auto"><table>
+          <thead><tr><th>نام</th><th>ارزیاب</th><th>خام</th><th>تعدیل</th><th>Δ</th></tr></thead>
+          <tbody id="tblAttention"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</div>
       <div id="subtab-risk" class="hidden">
         <div class="placeholder">
           <div class="ico">⚠️</div>
@@ -998,13 +1072,12 @@ function switchSubtab(t){
     if (el) el.classList.toggle('hidden', name !== t);
   });
 
-  // Lazy render active tab
   if (!dashComputed) return;
   if (t === 'overview') renderOverview();
   else if (t === 'evaluators') renderEvaluators();
-  // else if (t === 'individual') renderIndividual();  // در فاز بعدی
-  // else if (t === 'risk') renderRisk();              // در فاز بعدی
-}
+  else if (t === 'individual') renderIndividual();
+  // else if (t === 'risk') renderRisk();  // فاز بعدی
+}    
 // ============================================================
 // Session bootstrap
 // ============================================================
@@ -1484,14 +1557,13 @@ function applyDashboardFilters(){
   const level = document.getElementById('dashFilterLevel').value;
   dashComputed = computeAll({ period, unit, category, level });
 
-  // فقط subtab فعلی را render کن
   const activeTab = document.querySelector('#tab-dashboard .subtab.active');
   const active = activeTab ? activeTab.dataset.tab : 'overview';
 
   if (active === 'overview') renderOverview();
   else if (active === 'evaluators') renderEvaluators();
-  // else if (active === 'individual') renderIndividual();  // فاز بعدی
-  // else if (active === 'risk') renderRisk();              // فاز بعدی
+  else if (active === 'individual') renderIndividual();
+  // else if (active === 'risk') renderRisk();  // فاز بعدی
 }
 // ============================================================
 // DASHBOARD — Compute
@@ -2084,6 +2156,245 @@ function exportEvaluatorsExcel(){
   const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
   XLSX.writeFile(wb, `ارزیاب_شناسی_${stamp}.xlsx`);
   showToast(`✓ فایل اکسل با ${stats.length} ارزیاب دانلود شد`, 'success');
+}
+// ============================================================
+// DASHBOARD 3 — فرد در بستر تیم
+// ============================================================
+function renderIndividual(){
+  const c = dashComputed;
+  if (!c || !c.base || !c.base.length) return;
+
+  const base = c.base;
+
+  // محاسبه رتبه‌ها
+  [...base].sort((a,b) => b.raw_score - a.raw_score).forEach((r,i) => { r.rank_raw = i + 1; });
+  [...base].sort((a,b) => b.adjusted_score - a.adjusted_score).forEach((r,i) => { r.rank_adjusted = i + 1; });
+  base.forEach(r => { r.rank_change = r.rank_raw - r.rank_adjusted; });
+
+  renderIndKPIs(c, base);
+  renderIndScatter(c, base);
+  renderIndRankChart(c, base);
+  renderIndTables(c, base);
+}
+
+function renderIndKPIs(c, base){
+  const avgAbsDelta = base.reduce((a,b) => a + Math.abs(b.delta), 0) / base.length;
+  const crossUp = base.filter(r => 
+    (r.raw_score < LOW_SCORE && r.adjusted_score >= LOW_SCORE) ||
+    (r.raw_score < HIGH_SCORE && r.adjusted_score >= HIGH_SCORE)
+  ).length;
+  const crossDown = base.filter(r =>
+    (r.raw_score >= HIGH_SCORE && r.adjusted_score < HIGH_SCORE) ||
+    (r.raw_score >= LOW_SCORE && r.adjusted_score < LOW_SCORE)
+  ).length;
+  const maxDelta = Math.max(...base.map(r => r.delta));
+  const minDelta = Math.min(...base.map(r => r.delta));
+
+  document.getElementById('indKpiGrid').innerHTML = `
+    <div class="kpi purple">
+      <div class="kpi-label">میانگین |Δ|</div>
+      <div class="kpi-value">${fmt(avgAbsDelta)}</div>
+      <div class="kpi-sub"><span>تغییر میانگین نمره پس از تعدیل</span></div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-label">عبور از مرز (بهبود)</div>
+      <div class="kpi-value">${crossUp}</div>
+      <div class="kpi-sub"><span>از زیر ۶۰ یا ۷۵ به بالای آن</span></div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-label">افت از مرز</div>
+      <div class="kpi-value">${crossDown}</div>
+      <div class="kpi-sub"><span>از بالای ۶۰ یا ۷۵ به زیر آن</span></div>
+    </div>
+    <div class="kpi teal">
+      <div class="kpi-label">بیشترین تغییر</div>
+      <div class="kpi-value">${maxDelta > 0 ? '+' : ''}${fmt(maxDelta, 1)}</div>
+      <div class="kpi-sub"><span>کمینه: <b>${fmt(minDelta, 1)}</b></span></div>
+    </div>
+  `;
+}
+
+function renderIndScatter(c, base){
+  if (charts.indScatter) charts.indScatter.destroy();
+  const ctx = document.getElementById('chartIndScatter');
+  if (!ctx) return;
+
+  const colorFor = (cls) => {
+    if (cls === 'آسان‌گیر') return 'rgba(239,68,68,.6)';
+    if (cls === 'سخت‌گیر') return 'rgba(16,185,129,.6)';
+    return 'rgba(59,130,246,.6)';
+  };
+  const borderFor = (cls) => {
+    if (cls === 'آسان‌گیر') return '#dc2626';
+    if (cls === 'سخت‌گیر') return '#047857';
+    return '#2563eb';
+  };
+
+  const data = base.map(r => ({
+    x: r.raw_score,
+    y: r.delta,
+    r: Math.max(5, Math.min(16, Math.abs(r.delta) + 5)),
+    person: r
+  }));
+
+  charts.indScatter = new Chart(ctx, {
+    type: 'bubble',
+    data: {
+      datasets: [{
+        data,
+        backgroundColor: data.map(d => colorFor(d.person.evaluator_class)),
+        borderColor: data.map(d => borderFor(d.person.evaluator_class)),
+        borderWidth: 1.5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const p = ctx.raw.person;
+              return [
+                p.name,
+                `خام: ${p.raw_score.toFixed(1)}`,
+                `تعدیل: ${p.adjusted_score.toFixed(1)}`,
+                `Δ: ${p.delta > 0 ? '+' : ''}${p.delta.toFixed(1)}`,
+                `ارزیاب: ${p.evaluator_name} (${p.evaluator_class})`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true, max: 100,
+          title: { display: true, text: 'نمره خام' }
+        },
+        y: {
+          title: { display: true, text: 'Δ (تعدیل − خام)' },
+          grid: {
+            color: ctx => ctx.tick.value === 0 ? '#0f172a' : '#e2e8f0',
+            lineWidth: ctx => ctx.tick.value === 0 ? 2 : 1
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderIndRankChart(c, base){
+  if (charts.indRank) charts.indRank.destroy();
+  const ctx = document.getElementById('chartIndRank');
+  if (!ctx) return;
+
+  const top = [...base]
+    .sort((a,b) => Math.abs(b.rank_change) - Math.abs(a.rank_change))
+    .slice(0, 15);
+
+  charts.indRank = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: top.map(r => r.name),
+      datasets: [{
+        label: 'تغییر رتبه',
+        data: top.map(r => r.rank_change),
+        backgroundColor: top.map(r => r.rank_change > 0 ? 'rgba(16,185,129,.85)' :
+                                     r.rank_change < 0 ? 'rgba(239,68,68,.85)' : '#94a3b8'),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const r = top[ctx.dataIndex];
+              const change = r.rank_change;
+              return [
+                `رتبه خام: ${r.rank_raw} → رتبه تعدیل: ${r.rank_adjusted}`,
+                change > 0 ? `↑ ${change} پله بهبود` :
+                change < 0 ? `↓ ${Math.abs(change)} پله افت` : 'تغییر نکرده'
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'تغییر رتبه (مثبت = بهبود)' }
+        },
+        y: { reverse: true }
+      }
+    }
+  });
+}
+
+function renderIndTables(c, base){
+  // ۱۰ نفر برتر خام
+  const topRaw = [...base].sort((a,b) => b.raw_score - a.raw_score).slice(0, 10);
+  document.getElementById('tblTopRaw').innerHTML = topRaw.map((r, i) => `
+    <tr>
+      <td><b>${i+1}</b></td>
+      <td>${escapeHtml(r.name)}</td>
+      <td style="font-size:11.5px;color:var(--muted)">${escapeHtml(r.unit || '—')}</td>
+      <td><b style="color:var(--primary)">${fmt(r.raw_score, 1)}</b></td>
+    </tr>
+  `).join('');
+
+  // ۱۰ نفر برتر تعدیل‌شده
+  const topAdj = [...base].sort((a,b) => b.adjusted_score - a.adjusted_score).slice(0, 10);
+  document.getElementById('tblTopAdjusted').innerHTML = topAdj.map((r, i) => `
+    <tr>
+      <td><b>${i+1}</b></td>
+      <td>${escapeHtml(r.name)}</td>
+      <td style="font-size:11.5px;color:var(--muted)">${escapeHtml(r.unit || '—')}</td>
+      <td><b style="color:var(--teal)">${fmt(r.adjusted_score, 1)}</b></td>
+    </tr>
+  `).join('');
+
+  // استعدادهای پنهان
+  const hidden = base.filter(r =>
+    (r.raw_score < LOW_SCORE && r.adjusted_score >= LOW_SCORE) ||
+    (r.raw_score < HIGH_SCORE && r.adjusted_score >= HIGH_SCORE)
+  ).sort((a,b) => b.delta - a.delta).slice(0, 10);
+
+  document.getElementById('tblHidden').innerHTML = hidden.length ? hidden.map(r => {
+    const crossed60 = r.raw_score < LOW_SCORE && r.adjusted_score >= LOW_SCORE;
+    const crossed75 = r.raw_score < HIGH_SCORE && r.adjusted_score >= HIGH_SCORE;
+    const badge60 = crossed60 ? '<span class="cross-badge up">۶۰↑</span>' : '';
+    const badge75 = crossed75 ? '<span class="cross-badge up">۷۵↑</span>' : '';
+    return `<tr>
+      <td>${badge60}${badge75}<b>${escapeHtml(r.name)}</b></td>
+      <td style="font-size:11.5px;color:var(--muted)">${escapeHtml(r.evaluator_name)}</td>
+      <td>${fmt(r.raw_score, 1)}</td>
+      <td><b style="color:var(--success)">${fmt(r.adjusted_score, 1)}</b></td>
+      <td><span class="rank-chip up">+${fmt(r.delta, 1)}</span></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">موردی یافت نشد</td></tr>';
+
+  // نیازمند توجه
+  const attention = base.filter(r =>
+    (r.raw_score >= HIGH_SCORE && r.adjusted_score < HIGH_SCORE) ||
+    (r.raw_score >= LOW_SCORE && r.adjusted_score < LOW_SCORE)
+  ).sort((a,b) => a.delta - b.delta).slice(0, 10);
+
+  document.getElementById('tblAttention').innerHTML = attention.length ? attention.map(r => {
+    const dropped60 = r.raw_score >= LOW_SCORE && r.adjusted_score < LOW_SCORE;
+    const dropped75 = r.raw_score >= HIGH_SCORE && r.adjusted_score < HIGH_SCORE;
+    const badge60 = dropped60 ? '<span class="cross-badge down">↓۶۰</span>' : '';
+    const badge75 = dropped75 ? '<span class="cross-badge down">↓۷۵</span>' : '';
+    return `<tr>
+      <td>${badge60}${badge75}<b>${escapeHtml(r.name)}</b></td>
+      <td style="font-size:11.5px;color:var(--muted)">${escapeHtml(r.evaluator_name)}</td>
+      <td>${fmt(r.raw_score, 1)}</td>
+      <td><b style="color:var(--danger)">${fmt(r.adjusted_score, 1)}</b></td>
+      <td><span class="rank-chip down">${fmt(r.delta, 1)}</span></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">موردی یافت نشد</td></tr>';
 }
 </script>
 </body>
