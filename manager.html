@@ -191,6 +191,26 @@
   #tab-dashboard .placeholder p{font-size:13px;line-height:1.8}
   #tab-dashboard .loading{text-align:center;padding:60px;color:var(--muted)}
   #tab-dashboard .loading .spin{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+    /* Dashboard 2: Evaluator styles */
+  #tab-dashboard .icc-hero{background:linear-gradient(135deg,#1e3a8a,#1e40af,#3b82f6);color:#fff;border-radius:var(--radius);padding:28px 32px;margin-bottom:20px;box-shadow:0 10px 30px rgba(30,64,175,.25);position:relative;overflow:hidden}
+  #tab-dashboard .icc-hero::before{content:'🎯';position:absolute;top:-20px;left:-20px;font-size:180px;opacity:.08;transform:rotate(-15deg)}
+  #tab-dashboard .icc-hero .icc-lbl{font-size:13px;opacity:.9;font-weight:600;margin-bottom:6px}
+  #tab-dashboard .icc-hero .icc-val{font-size:52px;font-weight:800;line-height:1;letter-spacing:-2px;margin-bottom:10px}
+  #tab-dashboard .icc-hero .icc-desc{font-size:14px;opacity:.95;line-height:1.8;max-width:700px}
+  #tab-dashboard .icc-hero .icc-badge{display:inline-block;background:rgba(255,255,255,.2);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;margin-top:12px}
+  #tab-dashboard .icc-hero.icc-warn{background:linear-gradient(135deg,#b45309,#f59e0b,#fbbf24);box-shadow:0 10px 30px rgba(180,83,9,.3)}
+  #tab-dashboard .icc-hero.icc-good{background:linear-gradient(135deg,#047857,#10b981,#34d399);box-shadow:0 10px 30px rgba(4,120,87,.25)}
+  #tab-dashboard .icc-hero.icc-na{background:linear-gradient(135deg,#475569,#64748b,#94a3b8)}
+
+  #tab-dashboard .eval-class-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:11.5px;font-weight:700;white-space:nowrap}
+  #tab-dashboard .eval-class-chip.lenient{background:rgba(239,68,68,.15);color:#dc2626}
+  #tab-dashboard .eval-class-chip.calibrated{background:rgba(59,130,246,.15);color:#2563eb}
+  #tab-dashboard .eval-class-chip.strict{background:rgba(16,185,129,.15);color:#047857}
+  #tab-dashboard .eval-class-chip.warn{background:rgba(245,158,11,.15);color:#b45309}
+
+  #tab-dashboard .eval-warn-icon{display:inline-block;margin-right:4px;color:#f59e0b;font-weight:700}
+  #tab-dashboard #evalTableBody tr{transition:background .15s}
+  #tab-dashboard #evalTableBody tr:hover{background:#f8fafc}
 
   @media(max-width:640px){
     .header-inner{padding:0 16px}
@@ -977,8 +997,14 @@ function switchSubtab(t){
     const el = document.getElementById('subtab-' + name);
     if (el) el.classList.toggle('hidden', name !== t);
   });
-}
 
+  // Lazy render active tab
+  if (!dashComputed) return;
+  if (t === 'overview') renderOverview();
+  else if (t === 'evaluators') renderEvaluators();
+  // else if (t === 'individual') renderIndividual();  // در فاز بعدی
+  // else if (t === 'risk') renderRisk();              // در فاز بعدی
+}
 // ============================================================
 // Session bootstrap
 // ============================================================
@@ -1457,9 +1483,16 @@ function applyDashboardFilters(){
   const category = document.getElementById('dashFilterCategory').value;
   const level = document.getElementById('dashFilterLevel').value;
   dashComputed = computeAll({ period, unit, category, level });
-  renderOverview();
-}
 
+  // فقط subtab فعلی را render کن
+  const activeTab = document.querySelector('#tab-dashboard .subtab.active');
+  const active = activeTab ? activeTab.dataset.tab : 'overview';
+
+  if (active === 'overview') renderOverview();
+  else if (active === 'evaluators') renderEvaluators();
+  // else if (active === 'individual') renderIndividual();  // فاز بعدی
+  // else if (active === 'risk') renderRisk();              // فاز بعدی
+}
 // ============================================================
 // DASHBOARD — Compute
 // ============================================================
@@ -1770,6 +1803,287 @@ function renderImpact(c){
   };
   document.getElementById('boostedList').innerHTML = renderList(boosted);
   document.getElementById('reducedList').innerHTML = renderList(reduced);
+}
+// ============================================================
+// DASHBOARD 2 — ارزیاب‌شناسی
+// ============================================================
+function renderEvaluators(){
+  const c = dashComputed;
+  if (!c) return;
+
+  renderICC(c);
+  renderEvalSummary(c);
+  renderEvalMeansChart(c);
+  renderEvalBubbleChart(c);
+  renderEvalTable(c);
+}
+
+function renderICC(c){
+  const hero = document.getElementById('iccHero');
+  if (!hero) return;
+
+  if (c.icc === null){
+    hero.className = 'icc-hero icc-na';
+    hero.innerHTML = `
+      <div class="icc-lbl">ضریب همبستگی درون‌گروهی (ICC)</div>
+      <div class="icc-val">—</div>
+      <div class="icc-desc">تعداد ارزیاب‌های معتبر (با حداقل ${MIN_N_ICC} ارزیابی) کمتر از ۳ نفر است. برای محاسبه ICC حداقل ۳ ارزیاب معتبر لازم است.</div>
+    `;
+    return;
+  }
+
+  const iccPct = (c.icc * 100).toFixed(1);
+  let cls = 'icc-good';
+  let badge = '✅ تنوع نمرات عمدتاً به تفاوت‌های واقعی افراد برمی‌گردد';
+  if (c.icc > 0.5){
+    cls = 'icc-warn';
+    badge = '⚠️ سهم قابل‌توجهی از واریانس به ارزیاب مربوط است';
+  }
+
+  hero.className = 'icc-hero ' + cls;
+  hero.innerHTML = `
+    <div class="icc-lbl">ضریب همبستگی درون‌گروهی (ICC)</div>
+    <div class="icc-val">${iccPct}٪</div>
+    <div class="icc-desc">
+      یعنی حدود <b>${iccPct}٪</b> از واریانس نمرات به ارزیاب برمی‌گردد و ${(100 - iccPct*1).toFixed(1)}٪ به تفاوت‌های واقعی بین افراد.
+      هر چه این عدد بزرگ‌تر باشد، نمره خام بیشتر تحت تأثیر سوگیری ارزیاب است و تعدیل اهمیت بیشتری پیدا می‌کند.
+    </div>
+    <div class="icc-badge">${badge}</div>
+  `;
+}
+
+function renderEvalSummary(c){
+  const stats = c.evaluatorStats || [];
+  const lenient = stats.filter(s => s.classification === 'آسان‌گیر');
+  const strict = stats.filter(s => s.classification === 'سخت‌گیر');
+  const calibrated = stats.filter(s => s.classification === 'کالیبره');
+
+  document.getElementById('evalSummaryGrid').innerHTML = `
+    <div class="kpi green">
+      <div class="kpi-label">🟢 سخت‌گیر</div>
+      <div class="kpi-value">${strict.length}</div>
+      <div class="kpi-sub"><span>میانگین &lt; ${THRESH_STRICT}</span></div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-label">🔵 کالیبره</div>
+      <div class="kpi-value">${calibrated.length}</div>
+      <div class="kpi-sub"><span>${THRESH_STRICT} ≤ میانگین ≤ ${THRESH_LENIENT}</span></div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-label">🔴 آسان‌گیر</div>
+      <div class="kpi-value">${lenient.length}</div>
+      <div class="kpi-sub"><span>میانگین &gt; ${THRESH_LENIENT}</span></div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-label">میانگین سازمانی</div>
+      <div class="kpi-value">${fmt(c.orgMean)}</div>
+      <div class="kpi-sub"><span>مرجع تعدیل</span></div>
+    </div>
+  `;
+}
+
+function renderEvalMeansChart(c){
+  if (charts.evalMeans) charts.evalMeans.destroy();
+  const ctx = document.getElementById('chartEvalMeans');
+  if (!ctx) return;
+
+  const stats = [...(c.evaluatorStats || [])].sort((a,b) => a.mean - b.mean);
+
+  const colorFor = (cls) => {
+    if (cls === 'آسان‌گیر') return '#ef4444';
+    if (cls === 'سخت‌گیر') return '#10b981';
+    return '#3b82f6';
+  };
+
+  charts.evalMeans = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: stats.map(s => `${s.name} (n=${s.n})`),
+      datasets: [{
+        label: 'میانگین نمره',
+        data: stats.map(s => s.mean),
+        backgroundColor: stats.map(s => colorFor(s.classification)),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const s = stats[ctx.dataIndex];
+              return [
+                `میانگین: ${s.mean.toFixed(2)}`,
+                `طبقه: ${s.classification}`,
+                `انحراف معیار: ${s.std.toFixed(2)}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, max: 100 }
+      }
+    }
+  });
+}
+
+function renderEvalBubbleChart(c){
+  if (charts.evalBubble) charts.evalBubble.destroy();
+  const ctx = document.getElementById('chartEvalBubble');
+  if (!ctx) return;
+
+  const stats = c.evaluatorStats || [];
+
+  const colorFor = (cls) => {
+    if (cls === 'آسان‌گیر') return 'rgba(239,68,68,.6)';
+    if (cls === 'سخت‌گیر') return 'rgba(16,185,129,.6)';
+    return 'rgba(59,130,246,.6)';
+  };
+  const borderFor = (cls) => {
+    if (cls === 'آسان‌گیر') return '#dc2626';
+    if (cls === 'سخت‌گیر') return '#047857';
+    return '#2563eb';
+  };
+
+  const data = stats.map(s => ({
+    x: s.mean,
+    y: s.pctAbove75,
+    r: Math.max(8, Math.min(30, Math.sqrt(s.n) * 5)),
+    evaluator: s
+  }));
+
+  charts.evalBubble = new Chart(ctx, {
+    type: 'bubble',
+    data: {
+      datasets: [{
+        label: 'ارزیاب‌ها',
+        data,
+        backgroundColor: data.map(d => colorFor(d.evaluator.classification)),
+        borderColor: data.map(d => borderFor(d.evaluator.classification)),
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const e = ctx.raw.evaluator;
+              return [
+                `${e.name}`,
+                `میانگین: ${e.mean.toFixed(2)}`,
+                `درصد بالای ۷۵: ${e.pctAbove75.toFixed(1)}٪`,
+                `تعداد: ${e.n}`,
+                `طبقه: ${e.classification}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true, max: 100,
+          title: { display: true, text: 'میانگین نمره ارزیاب' }
+        },
+        y: {
+          beginAtZero: true, max: 100,
+          title: { display: true, text: 'درصد نمرات بالای ۷۵' }
+        }
+      }
+    }
+  });
+}
+
+function renderEvalTable(c){
+  const stats = [...(c.evaluatorStats || [])].sort((a,b) => b.mean - a.mean);
+  document.getElementById('evalTableCount').textContent = `${stats.length} ارزیاب`;
+
+  const tbody = document.getElementById('evalTableBody');
+  if (!stats.length){
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-row"><div class="ico">🔍</div>داده‌ای برای نمایش نیست</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = stats.map((s, i) => {
+    const cls = s.classification;
+    const clsClass = cls === 'آسان‌گیر' ? 'lenient' : cls === 'سخت‌گیر' ? 'strict' : 'calibrated';
+    const clsIcon = cls === 'آسان‌گیر' ? '🔴' : cls === 'سخت‌گیر' ? '🟢' : '🔵';
+    const lowN = s.n < 4 ? '<span class="eval-warn-icon" title="کمتر از ۴ ارزیابی — اعتماد پایین">⚠️</span>' : '';
+
+    return `<tr>
+      <td><b>${i+1}</b></td>
+      <td>${lowN}<b>${escapeHtml(s.name)}</b></td>
+      <td>${s.n}</td>
+      <td><b style="color:var(--primary)">${fmt(s.mean)}</b></td>
+      <td>${fmt(s.std)}</td>
+      <td>${pct(s.pctAbove75)}</td>
+      <td>${pct(s.pctBelow60)}</td>
+      <td>${s.shrunkBias > 0 ? '+' : ''}${fmt(s.shrunkBias)}</td>
+      <td><span class="eval-class-chip ${clsClass}">${clsIcon} ${cls}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// Excel Export — Evaluators
+// ============================================================
+function exportEvaluatorsExcel(){
+  const c = dashComputed;
+  if (!c || !c.evaluatorStats || !c.evaluatorStats.length){
+    alert('داده‌ای برای خروجی وجود ندارد.');
+    return;
+  }
+
+  const stats = [...c.evaluatorStats].sort((a,b) => b.mean - a.mean);
+
+  const aoa = [];
+  aoa.push(['گزارش ارزیاب‌شناسی — ارزیابی عملکرد BARS']);
+  aoa.push([`تاریخ: ${getTodayShamsi()}  |  تعداد ارزیاب: ${stats.length}  |  ICC: ${c.icc !== null ? (c.icc*100).toFixed(1)+'٪' : 'قابل محاسبه نیست'}`]);
+  aoa.push([]);
+  aoa.push(['رتبه','نام ارزیاب','تعداد ارزیابی','میانگین','انحراف معیار','درصد بالای ۷۵','درصد زیر ۶۰','شاخص سوگیری','طبقه']);
+
+  stats.forEach((s, i) => {
+    aoa.push([
+      i+1,
+      s.name,
+      s.n,
+      s.mean,
+      s.std,
+      s.pctAbove75,
+      s.pctBelow60,
+      s.shrunkBias,
+      s.classification
+    ]);
+  });
+
+  aoa.push([]);
+  aoa.push(['راهنمای طبقه‌بندی']);
+  aoa.push([`سخت‌گیر: میانگین < ${THRESH_STRICT}`]);
+  aoa.push([`کالیبره: ${THRESH_STRICT} ≤ میانگین ≤ ${THRESH_LENIENT}`]);
+  aoa.push([`آسان‌گیر: میانگین > ${THRESH_LENIENT}`]);
+  aoa.push([]);
+  aoa.push(['شاخص سوگیری']);
+  aoa.push(['مقدار مثبت: ارزیاب بالاتر از میانگین سازمانی نمره داده']);
+  aoa.push(['مقدار منفی: ارزیاب پایین‌تر از میانگین سازمانی نمره داده']);
+  aoa.push([`این شاخص با فرمول shrinkage (k=${K_SHRINK}) محاسبه می‌شود و برای تعدیل نمرات افراد استفاده می‌گردد.`]);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:6},{wch:30},{wch:14},{wch:12},{wch:14},{wch:14},{wch:12},{wch:14},{wch:12}];
+  ws['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:8}},{s:{r:1,c:0}, e:{r:1,c:8}}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ارزیاب‌ها');
+
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `ارزیاب_شناسی_${stamp}.xlsx`);
+  showToast(`✓ فایل اکسل با ${stats.length} ارزیاب دانلود شد`, 'success');
 }
 </script>
 </body>
