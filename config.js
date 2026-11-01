@@ -148,3 +148,79 @@ const FORMS = {
     ]
   }
 };
+
+// ============================================================
+// پارامترهای داشبورد تحلیلی
+// ============================================================
+const DASHBOARD_PARAMS = {
+  anchorNormal: 60,          // نمره ۳ از ۵ = «مطابق انتظار»
+  thresholdStrict: 55,        // ارزیاب سخت‌گیر (میانگین کمتر از این)
+  thresholdLenient: 75,       // ارزیاب آسان‌گیر (میانگین بالاتر از این)
+  shrinkageK: 2,              // پارامتر Shrinkage برای تعدیل سوگیری
+  highScoreThreshold: 75,     // آستانه «فرد بالا»
+  lowScoreThreshold: 60,      // آستانه «فرد نیازمند توجه»
+  minNForICC: 2               // حداقل تعداد ارزیابی برای محاسبه ICC
+};
+
+// ============================================================
+// توابع کمکی محاسباتی داشبورد
+// ============================================================
+
+// Shrinkage: تعدیل سوگیری ارزیاب با توجه به تعداد ارزیابی‌ها
+function computeShrunkBias(evaluatorMean, orgMean, n, k) {
+  if (n <= 0) return 0;
+  return (n * (evaluatorMean - orgMean)) / (n + k);
+}
+
+// میانگین
+function mean(arr) {
+  if (!arr || !arr.length) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+// میانه
+function median(arr) {
+  if (!arr || !arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0
+    ? sorted[mid]
+    : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+// انحراف معیار نمونه
+function stdDev(arr) {
+  if (!arr || arr.length < 2) return 0;
+  const m = mean(arr);
+  const sqDiff = arr.map(x => Math.pow(x - m, 2));
+  return Math.sqrt(sqDiff.reduce((a, b) => a + b, 0) / (arr.length - 1));
+}
+
+// صدک (0 تا 100)
+function percentile(arr, p) {
+  if (!arr || !arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const idx = (p / 100) * (sorted.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+// طبقه‌بندی ارزیاب بر اساس میانگین
+function classifyEvaluator(evaluatorMean) {
+  if (evaluatorMean < DASHBOARD_PARAMS.thresholdStrict) {
+    return { label: 'سخت‌گیر', color: '#ef4444', badge: 'سخت‌گیر' };
+  }
+  if (evaluatorMean > DASHBOARD_PARAMS.thresholdLenient) {
+    return { label: 'آسان‌گیر', color: '#10b981', badge: 'آسان‌گیر' };
+  }
+  return { label: 'کالیبره', color: '#3b82f6', badge: 'کالیبره' };
+}
+
+// برچسب اطمینان تعدیل بر اساس n
+function getAdjustmentConfidence(n) {
+  if (n <= 2) return { label: 'اطمینان کم', color: '#f59e0b', icon: '🟡' };
+  if (n <= 5) return { label: 'اطمینان متوسط', color: '#3b82f6', icon: '🔵' };
+  return { label: 'اطمینان بالا', color: '#10b981', icon: '🟢' };
+}
