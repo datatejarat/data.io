@@ -221,6 +221,22 @@
   #tab-dashboard .cross-badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10.5px;font-weight:700;margin-right:4px}
   #tab-dashboard .cross-badge.up{background:rgba(16,185,129,.2);color:#047857}
   #tab-dashboard .cross-badge.down{background:rgba(239,68,68,.2);color:#dc2626}
+    /* Dashboard 4: Risk styles */
+  #tab-dashboard .risk-tables-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+  #tab-dashboard .risk-tables-grid table{font-size:12.5px}
+  #tab-dashboard .risk-tables-grid th, #tab-dashboard .risk-tables-grid td{padding:8px 10px}
+  #tab-dashboard .risk-tables-grid th{font-size:11.5px}
+  #tab-dashboard .risk-tables-grid .card-head h2{font-size:14px}
+  #tab-dashboard #actionList li{padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:13px;display:flex;align-items:flex-start;gap:10px;line-height:1.8}
+  #tab-dashboard #actionList li:last-child{border-bottom:none}
+  #tab-dashboard #actionList li .action-icon{font-size:18px;flex-shrink:0;padding-top:2px}
+  #tab-dashboard #actionList li .action-text{flex:1;color:#334155}
+  #tab-dashboard #actionList li .action-text b{color:var(--text)}
+  #tab-dashboard .action-cta{display:inline-block;margin-left:6px;font-size:11px;color:var(--primary);font-weight:600}
+
+  @media(max-width:768px){
+    #tab-dashboard .risk-tables-grid{grid-template-columns:1fr}
+  }
 
   @media(max-width:768px){
     #tab-dashboard .ind-tables-grid{grid-template-columns:1fr}
@@ -604,12 +620,91 @@
   </div>
 </div>
       <div id="subtab-risk" class="hidden">
-        <div class="placeholder">
-          <div class="ico">⚠️</div>
-          <h3>داشبورد ریسک و اقدام</h3>
-          <p>این داشبورد در مرحله بعدی پیاده‌سازی خواهد شد.<br>شامل: ریسک رفتاری، افراد زیر ۶۰، گلوگاه‌های تکمیل، لیست اقدام</p>
-        </div>
+  <div class="info-box">
+    <b>ℹ️ راهنما:</b> این داشبورد موارد نیازمند اقدام را دسته‌بندی می‌کند. تمام نمرات بر اساس <b>تعدیل‌شده</b> هستند تا قضاوت منصفانه باشد. هر جدول یک نوع اقدام متفاوت را پیشنهاد می‌دهد.
+  </div>
+
+  <div class="kpi-grid" id="riskKpiGrid"></div>
+
+  <div class="chart-grid">
+    <div class="chart-card tall">
+      <h3>🎯 نقشه ریسک عملکردی × رفتاری</h3>
+      <div class="chart-sub">ربع پایین-راست = ریسک رفتاری | ربع پایین-چپ = نیازمند توجه جدی</div>
+      <div class="chart-wrap" style="height:360px"><canvas id="chartRiskScatter"></canvas></div>
+    </div>
+    <div class="chart-card tall">
+      <h3>🚧 گلوگاه‌های تکمیل</h3>
+      <div class="chart-sub">ارزیاب‌ها به ترتیب کمترین نرخ تکمیل</div>
+      <div class="chart-wrap" style="height:360px"><canvas id="chartRiskCompletion"></canvas></div>
+    </div>
+  </div>
+
+  <div class="risk-tables-grid">
+    <div class="card">
+      <div class="card-head">
+        <h2>⚠️ ریسک رفتاری</h2>
+        <span style="font-size:11.5px;color:var(--muted)">رفتاری &lt; ۶۰ ولی عملکردی ≥ ۶۰</span>
       </div>
+      <div class="card-body" style="padding:0">
+        <div style="overflow-x:auto"><table>
+          <thead><tr><th>نام</th><th>ارزیاب</th><th>عملکردی</th><th>رفتاری</th><th>شکاف</th></tr></thead>
+          <tbody id="tblBehRisk"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>🔻 زیر آستانه (تعدیل‌شده)</h2>
+        <span style="font-size:11.5px;color:var(--muted)">نمره تعدیل‌شده &lt; ۶۰</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div style="overflow-x:auto"><table>
+          <thead><tr><th>نام</th><th>ارزیاب</th><th>خام</th><th>تعدیل</th><th>Δ</th></tr></thead>
+          <tbody id="tblBelow60"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>🚧 گلوگاه‌های تکمیل</h2>
+        <span style="font-size:11.5px;color:var(--muted)">ارزیاب‌های با نرخ تکمیل &lt; ۵۰٪</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div style="overflow-x:auto"><table>
+          <thead><tr><th>ارزیاب</th><th>ارسال‌شده</th><th>کل</th><th>نرخ</th></tr></thead>
+          <tbody id="tblBottleneck"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>⚖️ نیازمند کالیبراسیون</h2>
+        <span style="font-size:11.5px;color:var(--muted)">ارزیاب آسان‌گیر با n≥۴</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div style="overflow-x:auto"><table>
+          <thead><tr><th>ارزیاب</th><th>n</th><th>میانگین</th><th>بالای ۷۵</th><th></th></tr></thead>
+          <tbody id="tblCalibration"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-head">
+      <h2>📋 لیست اقدام پیشنهادی</h2>
+      <button class="btn btn-solid" onclick="exportRiskExcel()" style="font-size:13px;padding:8px 14px">
+        📥 خروجی اکسل
+      </button>
+    </div>
+    <div class="card-body">
+      <ul id="actionList" style="list-style:none;padding:0;margin:0;line-height:2"></ul>
+    </div>
+  </div>
+</div>
     </div>
   </main>
 </div>
@@ -1076,8 +1171,8 @@ function switchSubtab(t){
   if (t === 'overview') renderOverview();
   else if (t === 'evaluators') renderEvaluators();
   else if (t === 'individual') renderIndividual();
-  // else if (t === 'risk') renderRisk();  // فاز بعدی
-}    
+  else if (t === 'risk') renderRisk();
+}
 // ============================================================
 // Session bootstrap
 // ============================================================
@@ -1563,7 +1658,7 @@ function applyDashboardFilters(){
   if (active === 'overview') renderOverview();
   else if (active === 'evaluators') renderEvaluators();
   else if (active === 'individual') renderIndividual();
-  // else if (active === 'risk') renderRisk();  // فاز بعدی
+  else if (active === 'risk') renderRisk();
 }
 // ============================================================
 // DASHBOARD — Compute
@@ -2395,6 +2490,434 @@ function renderIndTables(c, base){
       <td><span class="rank-chip down">${fmt(r.delta, 1)}</span></td>
     </tr>`;
   }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">موردی یافت نشد</td></tr>';
+}
+// ============================================================
+// DASHBOARD 4 — ریسک و اقدام
+// ============================================================
+function renderRisk(){
+  const c = dashComputed;
+  if (!c || !c.base || !c.base.length) return;
+
+  const base = c.base;
+  const stats = c.evaluatorStats || [];
+  const completion = c.completionByEval || [];
+
+  // محاسبه team_dev
+  const statsMap = {};
+  stats.forEach(s => { statsMap[s.id] = s; });
+  base.forEach(r => {
+    const s = statsMap[r.evaluator_id];
+    r.team_mean = s ? s.mean : r.raw_score;
+    r.team_dev = +(r.raw_score - r.team_mean).toFixed(2);
+  });
+
+  renderRiskKPIs(c, base, completion);
+  renderRiskScatter(c, base);
+  renderRiskCompletionChart(c, completion);
+  renderRiskTables(c, base, stats, completion);
+  renderActionList(c, base, stats, completion);
+}
+
+function renderRiskKPIs(c, base, completion){
+  const behRisk = base.filter(r => r.beh_avg < LOW_SCORE && r.perf_avg >= LOW_SCORE);
+  const below60 = base.filter(r => r.adjusted_score < LOW_SCORE);
+  const bottlenecks = completion.filter(e => e.rate < 50);
+  const lenient = (c.evaluatorStats || []).filter(s => s.classification === 'آسان‌گیر' && s.n >= 4);
+
+  document.getElementById('riskKpiGrid').innerHTML = `
+    <div class="kpi red">
+      <div class="kpi-label">⚠️ ریسک رفتاری</div>
+      <div class="kpi-value">${behRisk.length}</div>
+      <div class="kpi-sub"><span>رفتاری &lt; ۶۰ ولی عملکردی ≥ ۶۰</span></div>
+    </div>
+    <div class="kpi yellow">
+      <div class="kpi-label">🔻 زیر آستانه</div>
+      <div class="kpi-value">${below60.length}</div>
+      <div class="kpi-sub"><span>نمره تعدیل‌شده &lt; ۶۰</span></div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-label">🚧 گلوگاه تکمیل</div>
+      <div class="kpi-value">${bottlenecks.length}</div>
+      <div class="kpi-sub"><span>ارزیاب با تکمیل &lt; ۵۰٪</span></div>
+    </div>
+    <div class="kpi teal">
+      <div class="kpi-label">⚖️ نیاز کالیبراسیون</div>
+      <div class="kpi-value">${lenient.length}</div>
+      <div class="kpi-sub"><span>آسان‌گیر با n≥۴</span></div>
+    </div>
+  `;
+}
+
+function renderRiskScatter(c, base){
+  if (charts.riskScatter) charts.riskScatter.destroy();
+  const ctx = document.getElementById('chartRiskScatter');
+  if (!ctx) return;
+
+  const quadrant = (r) => {
+    const p = r.perf_avg >= LOW_SCORE;
+    const b = r.beh_avg >= LOW_SCORE;
+    if (p && b) return 'good';        // سبز
+    if (!p && b) return 'perf-weak';  // آبی
+    if (p && !b) return 'beh-risk';   // قرمز
+    return 'both-weak';               // نارنجی
+  };
+  const colorFor = (q) => {
+    if (q === 'good') return 'rgba(16,185,129,.6)';
+    if (q === 'perf-weak') return 'rgba(59,130,246,.6)';
+    if (q === 'beh-risk') return 'rgba(239,68,68,.6)';
+    return 'rgba(245,158,11,.6)';
+  };
+  const borderFor = (q) => {
+    if (q === 'good') return '#047857';
+    if (q === 'perf-weak') return '#2563eb';
+    if (q === 'beh-risk') return '#dc2626';
+    return '#b45309';
+  };
+
+  const data = base.map(r => ({
+    x: r.perf_avg,
+    y: r.beh_avg,
+    r: 7,
+    person: r,
+    q: quadrant(r)
+  }));
+
+  charts.riskScatter = new Chart(ctx, {
+    type: 'bubble',
+    data: {
+      datasets: [{
+        data,
+        backgroundColor: data.map(d => colorFor(d.q)),
+        borderColor: data.map(d => borderFor(d.q)),
+        borderWidth: 1.5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const p = ctx.raw.person;
+              return [
+                p.name,
+                `عملکردی: ${p.perf_avg.toFixed(1)}`,
+                `رفتاری: ${p.beh_avg.toFixed(1)}`,
+                `شکاف: ${(p.beh_avg - p.perf_avg).toFixed(1)}`,
+                `ارزیاب: ${p.evaluator_name}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true, max: 100,
+          title: { display: true, text: 'میانگین عملکردی (از ۱۰۰)' },
+          grid: {
+            color: ctx => ctx.tick.value === LOW_SCORE ? '#0f172a' : '#e2e8f0',
+            lineWidth: ctx => ctx.tick.value === LOW_SCORE ? 2 : 1
+          }
+        },
+        y: {
+          beginAtZero: true, max: 100,
+          title: { display: true, text: 'میانگین رفتاری (از ۱۰۰)' },
+          grid: {
+            color: ctx => ctx.tick.value === LOW_SCORE ? '#0f172a' : '#e2e8f0',
+            lineWidth: ctx => ctx.tick.value === LOW_SCORE ? 2 : 1
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderRiskCompletionChart(c, completion){
+  if (charts.riskCompletion) charts.riskCompletion.destroy();
+  const ctx = document.getElementById('chartRiskCompletion');
+  if (!ctx) return;
+
+  const sorted = [...completion].sort((a,b) => a.rate - b.rate);
+
+  charts.riskCompletion = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e => `${e.name} (${e.submitted}/${e.total})`),
+      datasets: [{
+        label: 'نرخ تکمیل',
+        data: sorted.map(e => e.rate),
+        backgroundColor: sorted.map(e =>
+          e.rate === 0 ? '#dc2626' :
+          e.rate < 50 ? '#f59e0b' :
+          e.rate < 90 ? '#3b82f6' : '#10b981'
+        ),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const e = sorted[ctx.dataIndex];
+              return [
+                `تکمیل: ${e.rate.toFixed(1)}٪`,
+                `${e.submitted} از ${e.total}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, max: 100 }
+      }
+    }
+  });
+}
+
+function renderRiskTables(c, base, stats, completion){
+  // ۱. ریسک رفتاری
+  const behRisk = base
+    .filter(r => r.beh_avg < LOW_SCORE && r.perf_avg >= LOW_SCORE)
+    .sort((a,b) => (a.beh_avg - a.perf_avg) - (b.beh_avg - b.perf_avg));
+
+  document.getElementById('tblBehRisk').innerHTML = behRisk.length
+    ? behRisk.map(r => `<tr>
+        <td><b>${escapeHtml(r.name)}</b></td>
+        <td style="font-size:11.5px;color:var(--muted)">${escapeHtml(r.evaluator_name)}</td>
+        <td>${fmt(r.perf_avg, 1)}</td>
+        <td style="color:var(--danger);font-weight:700">${fmt(r.beh_avg, 1)}</td>
+        <td><span class="rank-chip down">${fmt(r.beh_avg - r.perf_avg, 1)}</span></td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">موردی یافت نشد</td></tr>';
+
+  // ۲. زیر آستانه (تعدیل‌شده)
+  const below60 = base
+    .filter(r => r.adjusted_score < LOW_SCORE)
+    .sort((a,b) => a.adjusted_score - b.adjusted_score);
+
+  document.getElementById('tblBelow60').innerHTML = below60.length
+    ? below60.map(r => `<tr>
+        <td><b>${escapeHtml(r.name)}</b></td>
+        <td style="font-size:11.5px;color:var(--muted)">${escapeHtml(r.evaluator_name)}</td>
+        <td>${fmt(r.raw_score, 1)}</td>
+        <td style="color:var(--danger);font-weight:700">${fmt(r.adjusted_score, 1)}</td>
+        <td><span class="rank-chip ${r.delta > 0 ? 'up' : 'down'}">${r.delta > 0 ? '+' : ''}${fmt(r.delta, 1)}</span></td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">موردی یافت نشد</td></tr>';
+
+  // ۳. گلوگاه تکمیل
+  const bottlenecks = completion
+    .filter(e => e.rate < 50)
+    .sort((a,b) => a.rate - b.rate);
+
+  document.getElementById('tblBottleneck').innerHTML = bottlenecks.length
+    ? bottlenecks.map(e => `<tr>
+        <td><b>${escapeHtml(e.name)}</b></td>
+        <td>${e.submitted}</td>
+        <td>${e.total}</td>
+        <td><span class="rank-chip down">${fmt(e.rate, 1)}٪</span></td>
+      </tr>`).join('')
+    : '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">موردی یافت نشد</td></tr>';
+
+  // ۴. نیازمند کالیبراسیون
+  const lenient = (stats || [])
+    .filter(s => s.classification === 'آسان‌گیر' && s.n >= 4)
+    .sort((a,b) => b.mean - a.mean);
+
+  document.getElementById('tblCalibration').innerHTML = lenient.length
+    ? lenient.map(s => `<tr>
+        <td><b>${escapeHtml(s.name)}</b></td>
+        <td>${s.n}</td>
+        <td style="color:var(--danger);font-weight:700">${fmt(s.mean, 1)}</td>
+        <td>${pct(s.pctAbove75)}</td>
+        <td><span class="eval-class-chip lenient">🔴 آسان‌گیر</span></td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">موردی یافت نشد</td></tr>';
+}
+
+function renderActionList(c, base, stats, completion){
+  const actions = [];
+
+  // ۱. گلوگاه تکمیل
+  const zeroCompletion = completion.filter(e => e.rate === 0);
+  if (zeroCompletion.length){
+    const names = zeroCompletion.map(e => `<b>${escapeHtml(e.name)}</b>`).join('، ');
+    actions.push({
+      icon: '🚧',
+      text: `${zeroCompletion.length} ارزیاب هیچ ارزیابی‌ای ارسال نکرده‌اند: ${names}. <b>اقدام:</b> پیگیری فوری برای تکمیل ارزیابی‌ها.`
+    });
+  }
+
+  // ۲. آسان‌گیر
+  const lenient = (stats || []).filter(s => s.classification === 'آسان‌گیر' && s.n >= 4);
+  if (lenient.length){
+    const names = lenient.map(s => `<b>${escapeHtml(s.name)}</b> (میانگین ${fmt(s.mean, 1)})`).join('، ');
+    actions.push({
+      icon: '⚖️',
+      text: `${lenient.length} ارزیاب آسان‌گیر با نمونه کافی: ${names}. <b>اقدام:</b> جلسه کالیبراسیون برای یکسان‌سازی معیارها.`
+    });
+  }
+
+  // ۳. ریسک رفتاری
+  const behRisk = base.filter(r => r.beh_avg < LOW_SCORE && r.perf_avg >= LOW_SCORE);
+  if (behRisk.length){
+    const names = behRisk.slice(0, 5).map(r => `<b>${escapeHtml(r.name)}</b>`).join('، ');
+    const more = behRisk.length > 5 ? ` و ${behRisk.length - 5} نفر دیگر` : '';
+    actions.push({
+      icon: '⚠️',
+      text: `${behRisk.length} نفر ریسک رفتاری (رفتاری پایین با عملکردی قابل قبول): ${names}${more}. <b>اقدام:</b> جلسات کوچینگ رفتاری و بازخورد فردی.`
+    });
+  }
+
+  // ۴. زیر آستانه
+  const below60 = base.filter(r => r.adjusted_score < LOW_SCORE);
+  if (below60.length){
+    const names = below60.slice(0, 5).map(r => `<b>${escapeHtml(r.name)}</b>`).join('، ');
+    const more = below60.length > 5 ? ` و ${below60.length - 5} نفر دیگر` : '';
+    actions.push({
+      icon: '🔻',
+      text: `${below60.length} نفر پس از تعدیل زیر ۶۰: ${names}${more}. <b>اقدام:</b> تدوین برنامه بهبود فردی با مدیر مستقیم.`
+    });
+  }
+
+  // ۵. استعداد پنهان
+  const hidden = base.filter(r => r.team_dev > 5 && r.raw_score >= LOW_SCORE);
+  if (hidden.length){
+    const names = hidden.slice(0, 5).map(r => `<b>${escapeHtml(r.name)}</b>`).join('، ');
+    const more = hidden.length > 5 ? ` و ${hidden.length - 5} نفر دیگر` : '';
+    actions.push({
+      icon: '💎',
+      text: `${hidden.length} نفر با نمره بالاتر از میانگین تیم (team_dev > ۵): ${names}${more}. <b>اقدام:</b> بررسی برای ارتقا یا مسئولیت‌های بیشتر.`
+    });
+  }
+
+  // ۶. کل سازمان
+  if (!actions.length){
+    actions.push({
+      icon: '✅',
+      text: 'هیچ مورد فوری برای اقدام در فیلترهای فعلی شناسایی نشد.'
+    });
+  }
+
+  document.getElementById('actionList').innerHTML = actions.map(a =>
+    `<li><span class="action-icon">${a.icon}</span><span class="action-text">${a.text}</span></li>`
+  ).join('');
+}
+
+// ============================================================
+// Excel Export — Risk & Action
+// ============================================================
+function exportRiskExcel(){
+  const c = dashComputed;
+  if (!c || !c.base || !c.base.length){
+    alert('داده‌ای برای خروجی وجود ندارد.');
+    return;
+  }
+
+  const base = c.base;
+  const stats = c.evaluatorStats || [];
+  const completion = c.completionByEval || [];
+
+  const statsMap = {};
+  stats.forEach(s => { statsMap[s.id] = s; });
+  base.forEach(r => {
+    const s = statsMap[r.evaluator_id];
+    r.team_mean = s ? s.mean : r.raw_score;
+    r.team_dev = +(r.raw_score - r.team_mean).toFixed(2);
+  });
+
+  const behRisk = base.filter(r => r.beh_avg < LOW_SCORE && r.perf_avg >= LOW_SCORE);
+  const below60 = base.filter(r => r.adjusted_score < LOW_SCORE);
+  const bottlenecks = completion.filter(e => e.rate < 50);
+  const lenient = stats.filter(s => s.classification === 'آسان‌گیر' && s.n >= 4);
+  const hidden = base.filter(r => r.team_dev > 5 && r.raw_score >= LOW_SCORE);
+
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Behavioral Risk
+  const s1 = [];
+  s1.push(['ریسک رفتاری — رفتاری < ۶۰ با عملکردی ≥ ۶۰']);
+  s1.push([`تاریخ: ${getTodayShamsi()}  |  تعداد: ${behRisk.length}`]);
+  s1.push([]);
+  s1.push(['نام','واحد','ارزیاب','عملکردی','رفتاری','شکاف']);
+  behRisk.sort((a,b) => (a.beh_avg - a.perf_avg) - (b.beh_avg - b.perf_avg));
+  behRisk.forEach(r => {
+    s1.push([r.name, r.unit || '', r.evaluator_name, r.perf_avg, r.beh_avg, r.beh_avg - r.perf_avg]);
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet(s1);
+  ws1['!cols'] = [{wch:28},{wch:28},{wch:24},{wch:10},{wch:10},{wch:10}];
+  ws1['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:5}},{s:{r:1,c:0}, e:{r:1,c:5}}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'ریسک رفتاری');
+
+  // Sheet 2: Below 60 (adjusted)
+  const s2 = [];
+  s2.push(['زیر آستانه پس از تعدیل — نمره تعدیل‌شده < ۶۰']);
+  s2.push([`تاریخ: ${getTodayShamsi()}  |  تعداد: ${below60.length}`]);
+  s2.push([]);
+  s2.push(['نام','واحد','ارزیاب','نمره خام','نمره تعدیل','Δ']);
+  below60.sort((a,b) => a.adjusted_score - b.adjusted_score);
+  below60.forEach(r => {
+    s2.push([r.name, r.unit || '', r.evaluator_name, r.raw_score, r.adjusted_score, r.delta]);
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet(s2);
+  ws2['!cols'] = [{wch:28},{wch:28},{wch:24},{wch:12},{wch:12},{wch:10}];
+  ws2['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:5}},{s:{r:1,c:0}, e:{r:1,c:5}}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'زیر آستانه');
+
+  // Sheet 3: Bottlenecks
+  const s3 = [];
+  s3.push(['گلوگاه‌های تکمیل — نرخ تکمیل < ۵۰٪']);
+  s3.push([`تاریخ: ${getTodayShamsi()}  |  تعداد: ${bottlenecks.length}`]);
+  s3.push([]);
+  s3.push(['ارزیاب','ارسال‌شده','کل','نرخ تکمیل']);
+  bottlenecks.sort((a,b) => a.rate - b.rate);
+  bottlenecks.forEach(e => {
+    s3.push([e.name, e.submitted, e.total, e.rate + '٪']);
+  });
+  const ws3 = XLSX.utils.aoa_to_sheet(s3);
+  ws3['!cols'] = [{wch:30},{wch:12},{wch:12},{wch:14}];
+  ws3['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:3}},{s:{r:1,c:0}, e:{r:1,c:3}}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'گلوگاه تکمیل');
+
+  // Sheet 4: Calibration
+  const s4 = [];
+  s4.push(['ارزیاب‌های آسان‌گیر با n≥۴ — نیازمند کالیبراسیون']);
+  s4.push([`تاریخ: ${getTodayShamsi()}  |  تعداد: ${lenient.length}`]);
+  s4.push([]);
+  s4.push(['ارزیاب','تعداد','میانگین','بالای ۷۵','زیر ۶۰','شاخص سوگیری']);
+  lenient.sort((a,b) => b.mean - a.mean);
+  lenient.forEach(s => {
+    s4.push([s.name, s.n, s.mean, s.pctAbove75 + '٪', s.pctBelow60 + '٪', s.shrunkBias]);
+  });
+  const ws4 = XLSX.utils.aoa_to_sheet(s4);
+  ws4['!cols'] = [{wch:30},{wch:10},{wch:12},{wch:14},{wch:14},{wch:16}];
+  ws4['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:5}},{s:{r:1,c:0}, e:{r:1,c:5}}];
+  XLSX.utils.book_append_sheet(wb, ws4, 'کالیبراسیون');
+
+  // Sheet 5: Hidden Talent
+  const s5 = [];
+  s5.push(['استعدادهای پنهان — نمره بالاتر از میانگین تیم (Δ > ۵)']);
+  s5.push([`تاریخ: ${getTodayShamsi()}  |  تعداد: ${hidden.length}`]);
+  s5.push([]);
+  s5.push(['نام','واحد','ارزیاب','میانگین تیم','نمره خام','team_dev']);
+  hidden.sort((a,b) => b.team_dev - a.team_dev);
+  hidden.forEach(r => {
+    s5.push([r.name, r.unit || '', r.evaluator_name, r.team_mean, r.raw_score, r.team_dev]);
+  });
+  const ws5 = XLSX.utils.aoa_to_sheet(s5);
+  ws5['!cols'] = [{wch:28},{wch:28},{wch:24},{wch:14},{wch:12},{wch:12}];
+  ws5['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:5}},{s:{r:1,c:0}, e:{r:1,c:5}}];
+  XLSX.utils.book_append_sheet(wb, ws5, 'استعداد پنهان');
+
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `لیست_اقدام_${stamp}.xlsx`);
+  showToast('✓ فایل اکسل با ۵ شیت دانلود شد', 'success');
 }
 </script>
 </body>
