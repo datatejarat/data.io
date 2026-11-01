@@ -7,9 +7,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="config.js"></script>
 <style>
-  :root{--primary:#1e40af;--primary-light:#3b82f6;--primary-dark:#1e3a8a;--bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#0f172a;--muted:#64748b;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--beh:#8b5cf6;--func:#0ea5e9;--radius:14px;--radius-sm:8px;--shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04)}
+  :root{--primary:#1e40af;--primary-light:#3b82f6;--primary-dark:#1e3a8a;--bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#0f172a;--muted:#64748b;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--beh:#8b5cf6;--func:#0ea5e9;--purple:#8b5cf6;--teal:#0d9488;--radius:14px;--radius-sm:8px;--shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04)}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Vazirmatn',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:14px}
   .hidden{display:none !important}
@@ -34,7 +35,7 @@
   .login-card p{text-align:center;color:var(--muted);font-size:13px;margin-bottom:24px}
   .login-error{background:#fef2f2;color:var(--danger);padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;border:1px solid #fecaca}
   .app-header{background:linear-gradient(135deg,var(--primary-dark),var(--primary),var(--primary-light));color:#fff;padding:16px 0;position:sticky;top:0;z-index:100;box-shadow:0 10px 30px rgba(15,23,42,.08)}
-  .header-inner{max-width:1320px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .header-inner{max-width:1400px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
   .brand{display:flex;align-items:center;gap:12px}
   .brand-icon{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid rgba(255,255,255,.2)}
   .brand h1{font-size:17px;font-weight:700}
@@ -42,7 +43,7 @@
   .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .user-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);padding:7px 14px;border-radius:20px;font-size:12.5px;color:#fff}
   .role-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.22);padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700}
-  .content{max-width:1320px;margin:0 auto;padding:24px}
+  .content{max-width:1400px;margin:0 auto;padding:24px}
   .tabs{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:20px;flex-wrap:wrap}
   .tab{padding:11px 22px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:all .15s;display:flex;align-items:center;gap:8px;user-select:none}
   .tab:hover{color:var(--primary-light)}
@@ -86,8 +87,6 @@
   .icon-btn.primary:hover{background:#eff6ff}
   .empty-row{text-align:center;padding:50px 20px;color:var(--muted)}
   .empty-row .ico{font-size:44px;opacity:.4;margin-bottom:8px}
-
-  /* Modal */
   .modal-back{position:fixed;inset:0;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;backdrop-filter:blur(4px)}
   .modal{background:#fff;border-radius:var(--radius);max-width:900px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
   .modal-head{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;position:sticky;top:0;z-index:10}
@@ -96,8 +95,6 @@
   .modal-head .close:hover{background:rgba(255,255,255,.28)}
   .modal-body{padding:24px}
   .modal-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;background:#fafbfc;position:sticky;bottom:0}
-
-  /* View evaluation content */
   .ve-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 20px;background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:18px;font-size:13px}
   .ve-info > div{display:flex;gap:6px;align-items:baseline}
   .ve-info .lbl{color:var(--muted);font-weight:600;font-size:12px;white-space:nowrap}
@@ -128,19 +125,72 @@
   .ve-fb.good .t{color:#047857}
   .ve-fb.warn .t{color:#b45309}
   .ve-fb .c{font-size:12.5px;color:#334155;line-height:1.8;white-space:pre-wrap;min-height:32px}
-
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 22px;border-radius:30px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw}
   .toast.show{opacity:1}
   .toast.error{background:var(--danger)}
   .toast.success{background:var(--success)}
-
-  /* Full-screen loading overlay for print all */
   .loading-overlay{position:fixed;inset:0;background:rgba(15,23,42,.75);display:none;align-items:center;justify-content:center;z-index:500;color:#fff}
   .loading-overlay.show{display:flex}
   .loading-box{background:#fff;color:var(--text);padding:30px 40px;border-radius:16px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
   .loading-box .spin{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
   @keyframes spin{to{transform:rotate(360deg)}}
   .loading-box p{font-size:14px;color:var(--muted)}
+
+  /* ============================================================
+     DASHBOARD STYLES (scoped to #tab-dashboard)
+     ============================================================ */
+  #tab-dashboard .subtabs{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:20px;flex-wrap:wrap}
+  #tab-dashboard .subtab{padding:11px 22px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:all .15s;user-select:none}
+  #tab-dashboard .subtab:hover{color:var(--primary-light)}
+  #tab-dashboard .subtab.active{color:var(--primary);border-bottom-color:var(--primary)}
+  #tab-dashboard .filter-bar{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;box-shadow:var(--shadow);display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end}
+  #tab-dashboard .filter-bar .field{margin-bottom:0}
+  #tab-dashboard .kpi{text-align:right;padding:18px}
+  #tab-dashboard .kpi.blue::before{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+  #tab-dashboard .kpi.green::before{background:linear-gradient(90deg,#10b981,#34d399)}
+  #tab-dashboard .kpi.yellow::before{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+  #tab-dashboard .kpi.red::before{background:linear-gradient(90deg,#ef4444,#f87171)}
+  #tab-dashboard .kpi.purple::before{background:linear-gradient(90deg,#8b5cf6,#a78bfa)}
+  #tab-dashboard .kpi.teal::before{background:linear-gradient(90deg,#0d9488,#14b8a6)}
+  #tab-dashboard .kpi-label{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:6px}
+  #tab-dashboard .kpi-value{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1;color:var(--primary)}
+  #tab-dashboard .kpi.blue .kpi-value{color:#3b82f6}
+  #tab-dashboard .kpi.green .kpi-value{color:#10b981}
+  #tab-dashboard .kpi.yellow .kpi-value{color:#f59e0b}
+  #tab-dashboard .kpi.red .kpi-value{color:#ef4444}
+  #tab-dashboard .kpi.purple .kpi-value{color:#8b5cf6}
+  #tab-dashboard .kpi.teal .kpi-value{color:#0d9488}
+  #tab-dashboard .kpi-sub{font-size:11px;color:var(--muted);margin-top:4px;display:flex;justify-content:space-between;gap:6px}
+  #tab-dashboard .kpi-sub b{color:var(--text)}
+  #tab-dashboard .chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;margin-bottom:20px}
+  #tab-dashboard .chart-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  #tab-dashboard .chart-card h3{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)}
+  #tab-dashboard .chart-card .chart-sub{font-size:11.5px;color:var(--muted);margin-bottom:14px}
+  #tab-dashboard .chart-wrap{position:relative;height:260px}
+  #tab-dashboard .chart-card.tall .chart-wrap{height:340px}
+  #tab-dashboard .chart-card.full{grid-column:1 / -1}
+  #tab-dashboard .info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;font-size:12.5px;color:#1e40af;line-height:1.8;margin-bottom:16px}
+  #tab-dashboard .info-box.warn{background:#fffbeb;border-color:#fcd34d;color:#92400e}
+  #tab-dashboard .info-box.danger{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+  #tab-dashboard .impact-section{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  #tab-dashboard .impact-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  #tab-dashboard .impact-card.green .impact-head{background:linear-gradient(135deg,#ecfdf5,#d1fae5);color:#065f46}
+  #tab-dashboard .impact-card.red .impact-head{background:linear-gradient(135deg,#fef2f2,#fee2e2);color:#991b1b}
+  #tab-dashboard .impact-head{padding:14px 18px;font-size:13.5px;font-weight:700;border-bottom:1px solid var(--border)}
+  #tab-dashboard .impact-list{padding:0;max-height:340px;overflow-y:auto}
+  #tab-dashboard .impact-item{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid #f1f5f9;font-size:12.5px;gap:10px}
+  #tab-dashboard .impact-item:last-child{border-bottom:none}
+  #tab-dashboard .impact-item .name{flex:1;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #tab-dashboard .impact-item .meta{color:var(--muted);font-size:11px}
+  #tab-dashboard .impact-item .delta{font-weight:800;font-size:13px;padding:3px 10px;border-radius:20px;white-space:nowrap}
+  #tab-dashboard .impact-item .delta.pos{background:rgba(16,185,129,.15);color:#059669}
+  #tab-dashboard .impact-item .delta.neg{background:rgba(239,68,68,.15);color:#dc2626}
+  #tab-dashboard .placeholder{background:#fff;border:2px dashed var(--border);border-radius:var(--radius);padding:60px 30px;text-align:center;color:var(--muted)}
+  #tab-dashboard .placeholder .ico{font-size:48px;margin-bottom:12px;opacity:.5}
+  #tab-dashboard .placeholder h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+  #tab-dashboard .placeholder p{font-size:13px;line-height:1.8}
+  #tab-dashboard .loading{text-align:center;padding:60px;color:var(--muted)}
+  #tab-dashboard .loading .spin{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
 
   @media(max-width:640px){
     .header-inner{padding:0 16px}
@@ -150,6 +200,8 @@
     .kpi .kpi-val{font-size:24px}
     .ve-fb-grid{grid-template-columns:1fr}
     .ve-score-boxes{grid-template-columns:1fr}
+    #tab-dashboard .chart-grid{grid-template-columns:1fr}
+    #tab-dashboard .impact-section{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -181,7 +233,7 @@
         <span class="role-badge" id="roleBadge">—</span>
         <span class="user-chip" id="userChip">—</span>
         <a href="index.html" class="btn btn-ghost">📝 فرم ارزیابی</a>
-        <a href="dashboard.html" class="btn btn-ghost">📊 داشبورد</a>
+        <button class="btn btn-ghost" onclick="switchTab('dashboard')">📊 داشبورد</button>
         <a href="admin.html" class="btn btn-ghost hidden" id="adminLink">⚙️ پنل ادمین</a>
         <button class="btn btn-ghost" onclick="logout()">🚪 خروج</button>
       </div>
@@ -198,6 +250,7 @@
       </div>
     </div>
 
+    <!-- ============ TAB: LIST ============ -->
     <div id="tab-list">
       <div class="kpi-grid">
         <div class="kpi">
@@ -297,17 +350,121 @@
       </div>
     </div>
 
+    <!-- ============ TAB: DASHBOARD (merged) ============ -->
     <div id="tab-dashboard" class="hidden">
-      <div class="card">
-        <div class="card-body">
-          <div class="empty-row">
-            <div class="ico">📊</div>
-            <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">داشبورد تحلیلی</div>
-            <div style="font-size:13px;line-height:1.8">
-              در نسخه‌های بعدی، نمودارها و تحلیل‌های پیشرفته به این بخش اضافه خواهد شد.<br>
-              (توزیع امتیازات، مقایسه واحدها، روند عملکرد و...)
+      <div class="subtabs">
+        <div class="subtab active" data-tab="overview" onclick="switchSubtab('overview')">📈 نمای کلی</div>
+        <div class="subtab" data-tab="evaluators" onclick="switchSubtab('evaluators')">👥 ارزیاب‌شناسی</div>
+        <div class="subtab" data-tab="individual" onclick="switchSubtab('individual')">🎯 فرد در بستر تیم</div>
+        <div class="subtab" data-tab="risk" onclick="switchSubtab('risk')">⚠️ ریسک و اقدام</div>
+      </div>
+
+      <div id="subtab-overview">
+        <div class="filter-bar">
+          <div class="field">
+            <label>دوره</label>
+            <select id="dashFilterPeriod" onchange="applyDashboardFilters()">
+              <option value="">همه دوره‌ها</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>واحد سازمانی</label>
+            <select id="dashFilterUnit" onchange="applyDashboardFilters()">
+              <option value="">همه واحدها</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>دسته شغلی</label>
+            <select id="dashFilterCategory" onchange="applyDashboardFilters()">
+              <option value="">همه</option>
+              <option value="technical">فنی</option>
+              <option value="staff">ستادی</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>سطح سازمانی</label>
+            <select id="dashFilterLevel" onchange="applyDashboardFilters()">
+              <option value="">همه سطوح</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="info-box" id="dashInfoBox">
+          <b>ℹ️ راهنما:</b> اعداد خام و تعدیل‌شده در کنار هم نمایش داده می‌شوند. «تعدیل» یعنی نمره هر فرد نسبت به سختی‌گیری/آسان‌گیری ارزیابش تصحیح می‌شود. رتبه‌بندی رسمی بر اساس نمره تعدیل‌شده است.
+        </div>
+
+        <div id="overviewLoading" class="loading">
+          <div class="spin"></div>
+          در حال بارگذاری...
+        </div>
+
+        <div id="overviewContent" class="hidden">
+          <div class="kpi-grid" id="dashKpiGrid"></div>
+
+          <div class="chart-grid">
+            <div class="chart-card tall">
+              <h3>📊 توزیع نمره نهایی</h3>
+              <div class="chart-sub">هیستوگرام با خطوط مرجع ۶۰ (مطابق انتظار) و ۷۵</div>
+              <div class="chart-wrap"><canvas id="chartHistogram"></canvas></div>
+            </div>
+            <div class="chart-card tall">
+              <h3>🥧 وضعیت تکمیل ارزیابی</h3>
+              <div class="chart-sub">ارسال‌شده / پیش‌نویس / شروع‌نشده</div>
+              <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
             </div>
           </div>
+
+          <div class="chart-grid">
+            <div class="chart-card tall">
+              <h3>🏢 میانگین نمره هر واحد</h3>
+              <div class="chart-sub">خام vs تعدیل‌شده</div>
+              <div class="chart-wrap"><canvas id="chartUnits"></canvas></div>
+            </div>
+            <div class="chart-card tall">
+              <h3>✅ نرخ تکمیل هر ارزیاب</h3>
+              <div class="chart-sub">درصد ارزیابی‌های ارسال‌شده از کل پرسنل تحت ارزیابی</div>
+              <div class="chart-wrap"><canvas id="chartCompletion"></canvas></div>
+            </div>
+          </div>
+
+          <div class="chart-card full" style="margin-bottom:20px">
+            <h3>⚖️ تأثیر تعدیل سوگیری ارزیاب</h3>
+            <div class="chart-sub">افرادی که نمره‌شون با تعدیل بیشترین تغییر را داشته</div>
+            <div class="impact-section" style="margin-top:14px">
+              <div class="impact-card green">
+                <div class="impact-head">🔼 بیشترین افزایش (تحت مدیر سخت‌گیر)</div>
+                <div class="impact-list" id="boostedList"></div>
+              </div>
+              <div class="impact-card red">
+                <div class="impact-head">🔽 بیشترین کاهش (تحت مدیر آسان‌گیر)</div>
+                <div class="impact-list" id="reducedList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="subtab-evaluators" class="hidden">
+        <div class="placeholder">
+          <div class="ico">👥</div>
+          <h3>داشبورد ارزیاب‌شناسی</h3>
+          <p>این داشبورد در مرحله بعدی پیاده‌سازی خواهد شد.<br>شامل: ICC، جدول تفصیلی ارزیاب‌ها، نقشه حبابی، طبقه‌بندی (آسان‌گیر/کالیبره/سخت‌گیر)</p>
+        </div>
+      </div>
+
+      <div id="subtab-individual" class="hidden">
+        <div class="placeholder">
+          <div class="ico">🎯</div>
+          <h3>داشبورد فرد در بستر تیم</h3>
+          <p>این داشبورد در مرحله بعدی پیاده‌سازی خواهد شد.<br>شامل: رتبه خام vs تعدیل، نقشه پراکندگی، جدول استعدادهای پنهان</p>
+        </div>
+      </div>
+
+      <div id="subtab-risk" class="hidden">
+        <div class="placeholder">
+          <div class="ico">⚠️</div>
+          <h3>داشبورد ریسک و اقدام</h3>
+          <p>این داشبورد در مرحله بعدی پیاده‌سازی خواهد شد.<br>شامل: ریسک رفتاری، افراد زیر ۶۰، گلوگاه‌های تکمیل، لیست اقدام</p>
         </div>
       </div>
     </div>
@@ -325,10 +482,35 @@
 
 <div class="toast" id="toast"></div>
 
-<script>
+<!-- ============ <script> در پیام ۲ شروع می‌شود ============ -->
+  <script>
+// ============================================================
+// Chart.js defaults (RTL + Vazirmatn)
+// ============================================================
+Chart.defaults.font.family = "'Vazirmatn', sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#475569';
+
+// ============================================================
+// Dashboard config (from config.js with fallbacks)
+// ============================================================
+const DP = (window.DASHBOARD_PARAMS || {});
+const ANCHOR_NORMAL = DP.anchorNormal ?? 60;
+const THRESH_STRICT = DP.thresholdStrict ?? 55;
+const THRESH_LENIENT = DP.thresholdLenient ?? 75;
+const K_SHRINK = DP.k ?? 2;
+const HIGH_SCORE = DP.highScoreThreshold ?? 75;
+const LOW_SCORE = DP.lowScoreThreshold ?? 60;
+const MIN_N_ICC = DP.minNForICC ?? 2;
+
+// ============================================================
+// Supabase client
 // ============================================================
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+// ============================================================
+// Global state
+// ============================================================
 let currentUser = null;
 let currentProfile = null;
 let allEmployees = [];
@@ -337,6 +519,15 @@ let allEvaluations = [];
 let evaluationsMap = {};
 let filteredRows = [];
 
+// Dashboard state
+let dashItems = [];
+let dashboardInitialized = false;
+let dashComputed = null;
+let charts = {};
+
+// ============================================================
+// Utils
+// ============================================================
 function showToast(msg, type=''){
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast show ' + type;
@@ -368,6 +559,11 @@ function formatDateFa(iso){
   if (!iso) return '—';
   try { return new Date(iso).toLocaleDateString('fa-IR'); } catch(e){ return '—'; }
 }
+function fmt(n, dec=2){
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toFixed(dec);
+}
+function pct(n){ return fmt(n, 2) + '٪'; }
 
 // ============================================================
 // Auth
@@ -378,11 +574,19 @@ async function doLogin(){
   const errEl = document.getElementById('loginError');
   const btn = document.getElementById('loginBtn');
   errEl.classList.add('hidden');
-  if (!email || !password){ errEl.textContent='ایمیل و رمز عبور را وارد کنید'; errEl.classList.remove('hidden'); return; }
+  if (!email || !password){
+    errEl.textContent = 'ایمیل و رمز عبور را وارد کنید';
+    errEl.classList.remove('hidden');
+    return;
+  }
   btn.disabled = true; btn.textContent = 'در حال ورود...';
   const { error } = await sb.auth.signInWithPassword({ email, password });
   btn.disabled = false; btn.textContent = 'ورود به سامانه';
-  if (error){ errEl.textContent = 'خطا: ' + error.message; errEl.classList.remove('hidden'); return; }
+  if (error){
+    errEl.textContent = 'خطا: ' + error.message;
+    errEl.classList.remove('hidden');
+    return;
+  }
   initApp();
 }
 async function logout(){ await sb.auth.signOut(); location.reload(); }
@@ -437,7 +641,7 @@ async function loadAll(){
 }
 
 // ============================================================
-// Filters
+// Filters (List tab)
 // ============================================================
 function buildFilters(){
   const units = [...new Set(allEmployees.map(e => e.unit).filter(Boolean))].sort();
@@ -688,6 +892,50 @@ function renderViewerContent(emp, evaluatorProf, ev, items){
 function closeViewer(){ document.getElementById('viewerRoot').innerHTML = ''; }
 
 // ============================================================
+// Loading overlay helpers
+// ============================================================
+function showLoading(text){
+  document.getElementById('loadingText').textContent = text;
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading(){
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+// ============================================================
+// Tabs (main)
+// ============================================================
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === t));
+  document.getElementById('tab-list').classList.toggle('hidden', t !== 'list');
+  document.getElementById('tab-dashboard').classList.toggle('hidden', t !== 'dashboard');
+
+  // Lazy init dashboard on first open
+  if (t === 'dashboard' && !dashboardInitialized){
+    dashboardInitialized = true;
+    initDashboard();
+  }
+}
+
+// ============================================================
+// Subtabs (dashboard)
+// ============================================================
+function switchSubtab(t){
+  document.querySelectorAll('#tab-dashboard .subtab').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === t);
+  });
+  ['overview','evaluators','individual','risk'].forEach(name => {
+    const el = document.getElementById('subtab-' + name);
+    if (el) el.classList.toggle('hidden', name !== t);
+  });
+}
+
+// ============================================================
+// Session bootstrap
+// ============================================================
+checkSession();
+    
+// ============================================================
 // Print - Single
 // ============================================================
 async function printFor(employeeId){
@@ -701,61 +949,44 @@ async function printFor(employeeId){
 }
 
 // ============================================================
-// Print - All (with current filters)
+// Print - All (respect current list filters)
 // ============================================================
 async function printAllReports(){
   const printBtn = document.getElementById('printAllBtn');
-
   const candidates = filteredRows.filter(e => {
     const ev = evaluationsMap[e.id];
     return ev && ev.status === 'submitted';
   });
-
   if (!candidates.length){
     alert('هیچ ارزیابی ثبت‌نهایی‌شده‌ای در فیلترهای فعلی وجود ندارد.\n\nنکته: فقط ارزیابی‌هایی که «ارسال نهایی» شده‌اند قابل چاپ هستند.');
     return;
   }
-
-  const filterSummary = [];
-  const unitFilter = document.getElementById('filterUnit').value;
-  const evFilter = document.getElementById('filterEvaluator').value;
-  if (unitFilter) filterSummary.push(`واحد: ${unitFilter}`);
-  if (evFilter){
-    const p = allProfiles.find(x => x.id === evFilter);
-    if (p) filterSummary.push(`ارزیاب: ${p.full_name}`);
-  }
-  const summaryText = filterSummary.length ? `\n(${filterSummary.join(' | ')})` : '';
-
-  if (!confirm(`آیا از چاپ ${candidates.length} کارنامه مطمئن هستید؟${summaryText}\n\nنکته: ممکن است چند ثانیه طول بکشد.`)) return;
+  const summary = [];
+  const uF = document.getElementById('filterUnit').value;
+  const eF = document.getElementById('filterEvaluator').value;
+  if (uF) summary.push(`واحد: ${uF}`);
+  if (eF){ const p = allProfiles.find(x => x.id === eF); if (p) summary.push(`ارزیاب: ${p.full_name}`); }
+  const sTxt = summary.length ? `\n(${summary.join(' | ')})` : '';
+  if (!confirm(`آیا از چاپ ${candidates.length} کارنامه مطمئن هستید؟${sTxt}\n\nممکن است چند ثانیه طول بکشد.`)) return;
 
   printBtn.disabled = true;
   showLoading('در حال بارگذاری کارنامه‌ها...');
-
   try {
     const evalIds = candidates.map(e => evaluationsMap[e.id].id);
-    const { data: allItems, error } = await sb.from('evaluation_items')
-      .select('*')
-      .in('evaluation_id', evalIds);
-
+    const { data: allItemsData, error } = await sb.from('evaluation_items').select('*').in('evaluation_id', evalIds);
     if (error) throw error;
-
-    const itemsByEval = {};
-    (allItems || []).forEach(it => {
-      if (!itemsByEval[it.evaluation_id]) itemsByEval[it.evaluation_id] = [];
-      itemsByEval[it.evaluation_id].push(it);
+    const byEval = {};
+    (allItemsData || []).forEach(it => {
+      if (!byEval[it.evaluation_id]) byEval[it.evaluation_id] = [];
+      byEval[it.evaluation_id].push(it);
     });
-
     showLoading('در حال آماده‌سازی صفحه چاپ...');
-
     const pages = candidates.map(emp => {
       const ev = evaluationsMap[emp.id];
       const evaluatorProf = allProfiles.find(p => p.id === emp.evaluator_id);
-      const items = itemsByEval[ev.id] || [];
-      return { emp, evaluatorProf, ev, items };
+      return { emp, evaluatorProf, ev, items: byEval[ev.id] || [] };
     });
-
     printPages(pages);
-
   } catch (err){
     console.error(err);
     alert('خطا در آماده‌سازی کارنامه‌ها: ' + err.message);
@@ -765,27 +996,15 @@ async function printAllReports(){
   }
 }
 
-function showLoading(text){
-  document.getElementById('loadingText').textContent = text;
-  document.getElementById('loadingOverlay').classList.add('show');
-}
-function hideLoading(){
-  document.getElementById('loadingOverlay').classList.remove('show');
-}
-
 // ============================================================
 // Core: Build & Print pages
 // ============================================================
 function printPages(pages){
   const total = pages.length;
   let pagesHtml = '';
-
   pages.forEach((p, idx) => {
-    const isLast = (idx === total - 1);
     pagesHtml += buildReportPageHtml(p.emp, p.evaluatorProf, p.ev, p.items, {
-      pageNum: idx + 1,
-      totalPages: total,
-      addPageBreak: !isLast
+      pageNum: idx + 1, totalPages: total, addPageBreak: idx !== total - 1
     });
   });
 
@@ -793,11 +1012,11 @@ function printPages(pages){
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>کارنامه‌های ارزیابی (${total} کارنامه)</title>
+<title>کارنامه‌های ارزیابی (${total})</title>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Vazirmatn',system-ui,sans-serif;direction:rtl;color:#0f172a;font-size:9.5pt;line-height:1.55;background:#fff;padding:8mm}
+  body{font-family:'Vazirmatn',sans-serif;direction:rtl;color:#0f172a;font-size:9.5pt;line-height:1.55;background:#fff;padding:8mm}
   .card-wrap{border:1.5px solid #1e40af;border-radius:10px;overflow:hidden;margin-bottom:8mm;page-break-inside:avoid}
   .card-wrap:last-child{margin-bottom:0}
   .card-wrap.page-break{page-break-after:always}
@@ -805,8 +1024,7 @@ function printPages(pages){
   .header h1{font-size:13.5pt;font-weight:800}
   .header .sub{font-size:8.5pt;opacity:.92;margin-top:2px}
   .header .right{text-align:left;font-size:8.5pt;line-height:1.65}
-  .header .right b{font-weight:700}
-  .info-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:3px 18px;padding:9px 18px;background:#f8fafc;border-bottom:1px solid #e2e8f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .info-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:3px 18px;padding:9px 18px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
   .info-item{display:flex;gap:6px;font-size:9pt;align-items:baseline}
   .info-item .lbl{color:#64748b;font-weight:600;font-size:8.5pt;white-space:nowrap}
   .info-item .val{color:#0f172a;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -818,12 +1036,12 @@ function printPages(pages){
   .score-cell .sub{font-size:7.5pt;color:#94a3b8;margin-top:4px}
   .score-cell.beh .num{color:#7c3aed}
   .score-cell.func .num{color:#0284c7}
-  .score-cell.final{background:linear-gradient(180deg,#eff6ff,#fff);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .score-cell.final{background:linear-gradient(180deg,#eff6ff,#fff)}
   .score-cell.final .num{color:#1e40af;font-size:27pt}
   .score-cell.final .lbl{color:#1e40af;font-weight:700}
   .comp-section{padding:10px 18px 11px;border-bottom:1px solid #e2e8f0}
-  .comp-section-title{font-size:9pt;font-weight:700;color:#0f172a;margin-bottom:7px;display:flex;align-items:center;gap:7px}
-  .comp-section-title .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .comp-section-title{font-size:9pt;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:7px}
+  .comp-section-title .dot{width:7px;height:7px;border-radius:50%}
   .comp-section-title.func .dot{background:#0284c7}
   .comp-section-title.beh .dot{background:#7c3aed}
   .comp-section-title .w-badge{margin-right:auto;font-size:8pt;font-weight:600;color:#64748b;background:#f1f5f9;padding:2px 10px;border-radius:20px}
@@ -845,8 +1063,7 @@ function printPages(pages){
   .sign-line{height:34px;border-bottom:1px solid #94a3b8;margin-bottom:5px}
   .sign-lbl{font-size:8.5pt;color:#64748b;font-weight:600}
   .sign-name{font-size:7.5pt;color:#94a3b8;margin-top:2px}
-  .footer{padding:7px 18px;background:#eff6ff;border-top:1px solid #dbeafe;text-align:center;font-size:7.5pt;color:#1e40af;line-height:1.7;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .footer .line1{margin-bottom:2px}
+  .footer{padding:7px 18px;background:#eff6ff;border-top:1px solid #dbeafe;text-align:center;font-size:7.5pt;color:#1e40af;line-height:1.7}
   .footer .line2{font-weight:700}
   @media print{
     @page{size:A4;margin:8mm}
@@ -864,15 +1081,11 @@ ${pagesHtml}
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;width:0;height:0;border:0;';
   document.body.appendChild(iframe);
-
   const doc = iframe.contentWindow.document;
   doc.open(); doc.write(html); doc.close();
-
   setTimeout(() => {
-    try {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-    } catch(e){ console.error(e); }
+    try { iframe.contentWindow.focus(); iframe.contentWindow.print(); }
+    catch(e){ console.error(e); }
     setTimeout(() => iframe.remove(), 2000);
   }, 700);
 }
@@ -900,11 +1113,7 @@ function buildReportPageHtml(emp, evaluatorProf, ev, items, opts){
         if (dbItem.is_na){ scoreDisplay = 'N/A'; isNA = true; }
         else if (dbItem.score){ scoreDisplay = `${dbItem.score}/5`; }
       }
-      return `<li>
-        <span class="cn">${escapeHtml(item.name)}</span>
-        <span class="cw">${item.weight}٪</span>
-        <span class="cs${isNA ? ' na' : ''}">${scoreDisplay}</span>
-      </li>`;
+      return `<li><span class="cn">${escapeHtml(item.name)}</span><span class="cw">${item.weight}٪</span><span class="cs${isNA ? ' na' : ''}">${scoreDisplay}</span></li>`;
     }).join('');
   }
 
@@ -919,48 +1128,29 @@ function buildReportPageHtml(emp, evaluatorProf, ev, items, opts){
     strengths: ev.strengths || '—',
     improvements: ev.improvements || '—'
   };
-
-  const pageBreakClass = opts && opts.addPageBreak ? ' page-break' : '';
-  const pageInfoHtml = (opts && opts.totalPages > 1)
+  const pb = opts && opts.addPageBreak ? ' page-break' : '';
+  const pageInfo = (opts && opts.totalPages > 1)
     ? `صفحه ${opts.pageNum} از ${opts.totalPages}`
     : `تاریخ چاپ: ${getTodayShamsi()}`;
 
   return `
-<div class="card-wrap${pageBreakClass}">
+<div class="card-wrap${pb}">
   <div class="header">
-    <div>
-      <h1>کارنامه عملکرد همکار (در سطح فردی)</h1>
-      <div class="sub">${form.title} — ارزیابی مبتنی بر انکورهای رفتاری (BARS)</div>
-    </div>
-    <div class="right">
-      ${pageInfoHtml}<br>
-      دوره ارزیابی: <b>${escapeHtml(info.period)}</b>
-    </div>
+    <div><h1>کارنامه عملکرد همکار (در سطح فردی)</h1><div class="sub">${form.title} — ارزیابی مبتنی بر انکورهای رفتاری (BARS)</div></div>
+    <div class="right">${pageInfo}<br>دوره ارزیابی: <b>${escapeHtml(info.period)}</b></div>
   </div>
   <div class="info-strip">
-    <div class="info-item"><span class="lbl">واحد سازمانی:</span><span class="val">${escapeHtml(info.unit)}</span></div>
+    <div class="info-item"><span class="lbl">واحد:</span><span class="val">${escapeHtml(info.unit)}</span></div>
     <div class="info-item"><span class="lbl">ارزیاب:</span><span class="val">${escapeHtml(info.evaluator)}</span></div>
     <div class="info-item"><span class="lbl">ارزیابی‌شونده:</span><span class="val">${escapeHtml(info.evaluatee)}</span></div>
     <div class="info-item"><span class="lbl">عنوان شغلی:</span><span class="val">${escapeHtml(info.position)}</span></div>
-    <div class="info-item"><span class="lbl">سطح سازمانی:</span><span class="val">${escapeHtml(info.level)}</span></div>
-    <div class="info-item"><span class="lbl">تاریخ ارزیابی:</span><span class="val">${escapeHtml(info.date)}</span></div>
+    <div class="info-item"><span class="lbl">سطح:</span><span class="val">${escapeHtml(info.level)}</span></div>
+    <div class="info-item"><span class="lbl">تاریخ:</span><span class="val">${escapeHtml(info.date)}</span></div>
   </div>
   <div class="score-section">
-    <div class="score-cell func">
-      <div class="lbl">میانگین وزنی عملکردی</div>
-      <div class="num">${funcAvg}</div>
-      <div class="sub">از ۱۰۰ — وزن ${w.functional}٪</div>
-    </div>
-    <div class="score-cell beh">
-      <div class="lbl">میانگین وزنی رفتاری</div>
-      <div class="num">${behAvg}</div>
-      <div class="sub">از ۱۰۰ — وزن ${w.behavioral}٪</div>
-    </div>
-    <div class="score-cell final">
-      <div class="lbl">امتیاز نهایی</div>
-      <div class="num">${finalScore}</div>
-      <div class="sub">از ۱۰۰</div>
-    </div>
+    <div class="score-cell func"><div class="lbl">میانگین وزنی عملکردی</div><div class="num">${funcAvg}</div><div class="sub">از ۱۰۰ — وزن ${w.functional}٪</div></div>
+    <div class="score-cell beh"><div class="lbl">میانگین وزنی رفتاری</div><div class="num">${behAvg}</div><div class="sub">از ۱۰۰ — وزن ${w.behavioral}٪</div></div>
+    <div class="score-cell final"><div class="lbl">امتیاز نهایی</div><div class="num">${finalScore}</div><div class="sub">از ۱۰۰</div></div>
   </div>
   <div class="comp-section">
     <div class="comp-section-title func"><span class="dot"></span>شایستگی‌های عملکردی <span class="w-badge">وزن ${w.functional}٪</span></div>
@@ -979,7 +1169,7 @@ function buildReportPageHtml(emp, evaluatorProf, ev, items, opts){
     <div class="sign-box"><div class="sign-line"></div><div class="sign-lbl">اطلاع و تأیید ارزیابی‌شونده</div><div class="sign-name">${escapeHtml(info.evaluatee)}</div></div>
   </div>
   <div class="footer">
-    <div class="line1">این کارنامه بر اساس مقیاس BARS (مقیاس درجه‌بندی مبتنی بر انکورهای رفتاری) تنظیم شده است.</div>
+    <div>این کارنامه بر اساس مقیاس BARS (مقیاس درجه‌بندی مبتنی بر انکورهای رفتاری) تنظیم شده است.</div>
     <div class="line2">مدیریت منابع انسانی</div>
   </div>
 </div>`;
@@ -1001,7 +1191,6 @@ async function exportExcelFor(employeeId){
 function buildExcel(emp, evaluatorProf, ev, items){
   const category = emp.category;
   const form = FORMS[category];
-  const w = CATEGORY_WEIGHTS[category];
   const itemMap = {};
   items.forEach(it => itemMap[it.competency_key] = it);
 
@@ -1046,104 +1235,59 @@ function buildExcel(emp, evaluatorProf, ev, items){
 }
 
 // ============================================================
-// Export All to Excel (گزارش جامع — همه با ستون وضعیت)
+// Excel Export - All
 // ============================================================
 async function exportAllToExcel(){
   const btn = document.getElementById('exportAllBtn');
-
   const candidates = filteredRows;
+  if (!candidates.length){ alert('هیچ پرسنلی در فیلترهای فعلی وجود ندارد.'); return; }
 
-  if (!candidates.length){
-    alert('هیچ پرسنلی در فیلترهای فعلی وجود ندارد.');
-    return;
-  }
-
-  let countSubmitted = 0, countDraft = 0, countNone = 0;
+  let cSub = 0, cDraft = 0, cNone = 0;
   candidates.forEach(e => {
     const ev = evaluationsMap[e.id];
-    if (!ev) countNone++;
-    else if (ev.status === 'submitted') countSubmitted++;
-    else if (ev.status === 'draft') countDraft++;
+    if (!ev) cNone++;
+    else if (ev.status === 'submitted') cSub++;
+    else if (ev.status === 'draft') cDraft++;
   });
 
-  const filterSummary = [];
-  const unitFilter = document.getElementById('filterUnit').value;
-  const evFilter = document.getElementById('filterEvaluator').value;
-  if (unitFilter) filterSummary.push(`واحد: ${unitFilter}`);
-  if (evFilter){
-    const p = allProfiles.find(x => x.id === evFilter);
-    if (p) filterSummary.push(`ارزیاب: ${p.full_name}`);
-  }
-  const summaryText = filterSummary.length ? `\n(${filterSummary.join(' | ')})` : '';
+  const summary = [];
+  const uF = document.getElementById('filterUnit').value;
+  const eF = document.getElementById('filterEvaluator').value;
+  if (uF) summary.push(`واحد: ${uF}`);
+  if (eF){ const p = allProfiles.find(x => x.id === eF); if (p) summary.push(`ارزیاب: ${p.full_name}`); }
+  const sTxt = summary.length ? `\n(${summary.join(' | ')})` : '';
 
-  if (!confirm(`آیا از خروجی اکسل ${candidates.length} پرسنل مطمئن هستید؟${summaryText}\n\nارسال‌شده: ${countSubmitted}  |  پیش‌نویس: ${countDraft}  |  شروع نشده: ${countNone}`)) return;
+  if (!confirm(`آیا از خروجی اکسل ${candidates.length} پرسنل مطمئن هستید؟${sTxt}\n\nارسال‌شده: ${cSub}  |  پیش‌نویس: ${cDraft}  |  شروع‌نشده: ${cNone}`)) return;
 
   btn.disabled = true;
   const origText = btn.innerHTML;
   btn.innerHTML = '⏳ در حال آماده‌سازی...';
 
   try {
-    const evalIds = candidates
-      .map(e => evaluationsMap[e.id])
-      .filter(ev => ev)
-      .map(ev => ev.id);
-
+    const evalIds = candidates.map(e => evaluationsMap[e.id]).filter(ev => ev).map(ev => ev.id);
     let itemsByEval = {};
     if (evalIds.length){
-      const { data: allItems, error } = await sb.from('evaluation_items')
-        .select('*')
-        .in('evaluation_id', evalIds);
-
+      const { data: allItemsData, error } = await sb.from('evaluation_items').select('*').in('evaluation_id', evalIds);
       if (error) throw error;
-      (allItems || []).forEach(it => {
+      (allItemsData || []).forEach(it => {
         if (!itemsByEval[it.evaluation_id]) itemsByEval[it.evaluation_id] = [];
         itemsByEval[it.evaluation_id].push(it);
       });
     }
 
-    // ============================================
-    // شیت ۱: نتایج کلی
-    // ============================================
     const aoa = [];
     aoa.push(['گزارش جامع ارزیابی عملکرد — BARS']);
-    aoa.push([`تاریخ خروجی: ${getTodayShamsi()}  |  تعداد پرسنل: ${candidates.length}  |  ارسال‌شده: ${countSubmitted}  |  پیش‌نویس: ${countDraft}  |  شروع نشده: ${countNone}${summaryText.replace(/\n/g,'  |  ')}`]);
+    aoa.push([`تاریخ خروجی: ${getTodayShamsi()}  |  تعداد پرسنل: ${candidates.length}  |  ارسال‌شده: ${cSub}  |  پیش‌نویس: ${cDraft}  |  شروع‌نشده: ${cNone}${sTxt.replace(/\n/g,'  |  ')}`]);
     aoa.push([]);
-
-    aoa.push([
-      'ردیف',
-      'نام و نام خانوادگی',
-      'کد پرسنلی',
-      'واحد سازمانی',
-      'عنوان شغلی',
-      'سطح سازمانی',
-      'دسته شغلی',
-      'ارزیاب (مدیر مستقیم)',
-      'دوره ارزیابی',
-      'وضعیت',
-      'عملکردی ۱',
-      'عملکردی ۲',
-      'عملکردی ۳',
-      'رفتاری ۱',
-      'رفتاری ۲',
-      'رفتاری ۳',
-      'میانگین عملکردی',
-      'میانگین رفتاری',
-      'امتیاز نهایی',
-      'نقاط قوت',
-      'حوزه‌های نیازمند بهبود',
-      'اقدامات توسعه پیشنهادی'
-    ]);
+    aoa.push(['ردیف','نام و نام خانوادگی','کد پرسنلی','واحد سازمانی','عنوان شغلی','سطح سازمانی','دسته شغلی','ارزیاب (مدیر مستقیم)','دوره ارزیابی','وضعیت','عملکردی ۱','عملکردی ۲','عملکردی ۳','رفتاری ۱','رفتاری ۲','رفتاری ۳','میانگین عملکردی','میانگین رفتاری','امتیاز نهایی','نقاط قوت','حوزه‌های نیازمند بهبود','اقدامات توسعه پیشنهادی']);
 
     candidates.forEach((emp, idx) => {
       const ev = evaluationsMap[emp.id];
       const evaluatorProf = allProfiles.find(p => p.id === emp.evaluator_id);
       const evaluatorName = evaluatorProf ? (evaluatorProf.full_name || '—') : '—';
       const catLabel = emp.category === 'technical' ? 'فنی' : 'ستادی';
-
       let statusText = 'شروع نشده';
-      if (ev){
-        statusText = ev.status === 'submitted' ? 'ارسال‌شده' : 'پیش‌نویس';
-      }
+      if (ev) statusText = ev.status === 'submitted' ? 'ارسال‌شده' : 'پیش‌نویس';
 
       const items = ev ? (itemsByEval[ev.id] || []) : [];
       const itemMap = {};
@@ -1159,22 +1303,11 @@ async function exportAllToExcel(){
       };
 
       aoa.push([
-        idx + 1,
-        emp.full_name || '',
-        emp.personnel_code || '',
-        emp.unit || '',
-        emp.position || '',
-        emp.job_level || '',
-        catLabel,
-        evaluatorName,
-        ev ? (ev.period || '') : '',
-        statusText,
-        getScore('functional', 0),
-        getScore('functional', 1),
-        getScore('functional', 2),
-        getScore('behavioral', 0),
-        getScore('behavioral', 1),
-        getScore('behavioral', 2),
+        idx + 1, emp.full_name || '', emp.personnel_code || '', emp.unit || '',
+        emp.position || '', emp.job_level || '', catLabel, evaluatorName,
+        ev ? (ev.period || '') : '', statusText,
+        getScore('functional', 0), getScore('functional', 1), getScore('functional', 2),
+        getScore('behavioral', 0), getScore('behavioral', 1), getScore('behavioral', 2),
         ev && ev.func_avg != null ? Number(ev.func_avg) : '',
         ev && ev.beh_avg != null ? Number(ev.beh_avg) : '',
         ev && ev.final_score != null ? Number(ev.final_score) : '',
@@ -1184,20 +1317,16 @@ async function exportAllToExcel(){
       ]);
     });
 
-    // ============================================
-    // شیت ۲: راهنمای شاخص‌ها
-    // ============================================
     const guide = [];
     guide.push(['راهنمای شاخص‌های ارزیابی']);
     guide.push(['(برای درک ستون‌های «عملکردی ۱-۳» و «رفتاری ۱-۳» در شیت «نتایج کلی»)']);
     guide.push([]);
-    guide.push(['دسته شغلی', 'عملکردی ۱', 'عملکردی ۲', 'عملکردی ۳', 'رفتاری ۱', 'رفتاری ۲', 'رفتاری ۳']);
-
+    guide.push(['دسته شغلی','عملکردی ۱','عملکردی ۲','عملکردی ۳','رفتاری ۱','رفتاری ۲','رفتاری ۳']);
     ['technical','staff'].forEach(cat => {
       const form = FORMS[cat];
-      const catLabel = cat === 'technical' ? 'فنی' : 'ستادی';
+      const label = cat === 'technical' ? 'فنی' : 'ستادی';
       guide.push([
-        catLabel,
+        label,
         `${form.functional[0].name} (${form.functional[0].weight}٪)`,
         `${form.functional[1].name} (${form.functional[1].weight}٪)`,
         `${form.functional[2].name} (${form.functional[2].weight}٪)`,
@@ -1206,62 +1335,32 @@ async function exportAllToExcel(){
         `${form.behavioral[2].name} (${form.behavioral[2].weight}٪)`
       ]);
     });
-
     guide.push([]);
     guide.push(['مقیاس امتیازدهی BARS']);
-    guide.push(['۱', 'بسیار پایین‌تر از انتظار']);
-    guide.push(['۲', 'کمتر از انتظار']);
-    guide.push(['۳', 'مطابق انتظار']);
-    guide.push(['۴', 'فراتر از انتظار']);
-    guide.push(['۵', 'استثنایی / الگوی نقش']);
-    guide.push(['N/A', 'قابل ارزیابی در این دوره نبود']);
-    guide.push([]);
-    guide.push(['میانگین‌ها و امتیاز نهایی از مقیاس ۱۰۰ محاسبه شده‌اند.']);
-    guide.push(['ستون «وضعیت» نشان می‌دهد که ارزیابی هر فرد در چه مرحله‌ای است.']);
+    [['۱','بسیار پایین‌تر از انتظار'],['۲','کمتر از انتظار'],['۳','مطابق انتظار'],['۴','فراتر از انتظار'],['۵','استثنایی / الگوی نقش'],['N/A','قابل ارزیابی در این دوره نبود']].forEach(r => guide.push(r));
 
-    // ============================================
-    // ساخت workbook
-    // ============================================
     const wb = XLSX.utils.book_new();
-
     const ws1 = XLSX.utils.aoa_to_sheet(aoa);
     ws1['!cols'] = [
-      {wch:6},   {wch:28},  {wch:12},  {wch:30},  {wch:30},  {wch:14},  {wch:10},
-      {wch:25},  {wch:14},  {wch:12},
-      {wch:11},  {wch:11},  {wch:11},  {wch:11},  {wch:11},  {wch:11},
-      {wch:14},  {wch:14},  {wch:12},
-      {wch:42},  {wch:42},  {wch:42}
+      {wch:6},{wch:28},{wch:12},{wch:30},{wch:30},{wch:14},{wch:10},{wch:25},{wch:14},{wch:12},
+      {wch:11},{wch:11},{wch:11},{wch:11},{wch:11},{wch:11},{wch:14},{wch:14},{wch:12},{wch:42},{wch:42},{wch:42}
     ];
-    ws1['!merges'] = [
-      {s:{r:0,c:0}, e:{r:0,c:21}},
-      {s:{r:1,c:0}, e:{r:1,c:21}}
-    ];
-    ws1['!freeze'] = {xSplit:0, ySplit:4};
+    ws1['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:21}},{s:{r:1,c:0}, e:{r:1,c:21}}];
     XLSX.utils.book_append_sheet(wb, ws1, 'نتایج کلی');
 
     const ws2 = XLSX.utils.aoa_to_sheet(guide);
-    ws2['!cols'] = [
-      {wch:12},{wch:38},{wch:38},{wch:38},{wch:38},{wch:38},{wch:38}
-    ];
+    ws2['!cols'] = [{wch:12},{wch:38},{wch:38},{wch:38},{wch:38},{wch:38},{wch:38}];
     ws2['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:6}}];
     XLSX.utils.book_append_sheet(wb, ws2, 'راهنمای شاخص‌ها');
 
-    // ============================================
-    // نام فایل
-    // ============================================
     const d = new Date();
     const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
     const parts = [];
-    if (unitFilter) parts.push(unitFilter.replace(/\s+/g,'_'));
-    if (evFilter){
-      const p = allProfiles.find(x => x.id === evFilter);
-      if (p && p.full_name) parts.push(p.full_name.replace(/\s+/g,'_'));
-    }
+    if (uF) parts.push(uF.replace(/\s+/g,'_'));
+    if (eF){ const p = allProfiles.find(x => x.id === eF); if (p && p.full_name) parts.push(p.full_name.replace(/\s+/g,'_')); }
     const suffix = parts.length ? '_' + parts.join('_') : '_کل';
     XLSX.writeFile(wb, `گزارش_جامع_ارزیابی${suffix}_${stamp}.xlsx`);
-
     showToast(`✓ فایل اکسل با ${candidates.length} پرسنل دانلود شد`, 'success');
-
   } catch (err){
     console.error(err);
     alert('خطا در تولید فایل اکسل: ' + err.message);
@@ -1272,15 +1371,357 @@ async function exportAllToExcel(){
 }
 
 // ============================================================
-// Tabs
+// DASHBOARD — Init
 // ============================================================
-function switchTab(t){
-  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === t));
-  document.getElementById('tab-list').classList.toggle('hidden', t !== 'list');
-  document.getElementById('tab-dashboard').classList.toggle('hidden', t !== 'dashboard');
+async function initDashboard(){
+  // Load evaluation_items for all submitted evaluations
+  const submittedIds = allEvaluations.filter(e => e.status === 'submitted').map(e => e.id);
+  dashItems = [];
+  if (submittedIds.length){
+    const { data } = await sb.from('evaluation_items').select('*').in('evaluation_id', submittedIds);
+    dashItems = data || [];
+  }
+
+  // Build dashboard filter dropdowns
+  const periods = [...new Set(allEvaluations.map(e => e.period).filter(Boolean))];
+  if (!periods.length && APP_CONFIG.DEFAULT_PERIOD) periods.push(APP_CONFIG.DEFAULT_PERIOD);
+  document.getElementById('dashFilterPeriod').innerHTML =
+    '<option value="">همه دوره‌ها</option>' +
+    periods.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+
+  const units = [...new Set(allEmployees.map(e => e.unit).filter(Boolean))].sort();
+  document.getElementById('dashFilterUnit').innerHTML =
+    '<option value="">همه واحدها</option>' +
+    units.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
+
+  const levels = ['کارشناس','کارشناس ارشد','سرپرست','مدیر','مدیر ارشد','کارمند','کارگر'];
+  document.getElementById('dashFilterLevel').innerHTML =
+    '<option value="">همه سطوح</option>' +
+    levels.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
+
+  applyDashboardFilters();
 }
 
-checkSession();
+function applyDashboardFilters(){
+  const period = document.getElementById('dashFilterPeriod').value;
+  const unit = document.getElementById('dashFilterUnit').value;
+  const category = document.getElementById('dashFilterCategory').value;
+  const level = document.getElementById('dashFilterLevel').value;
+  dashComputed = computeAll({ period, unit, category, level });
+  renderOverview();
+}
+
+// ============================================================
+// DASHBOARD — Compute
+// ============================================================
+function computeAll(filters){
+  const { period, unit, category, level } = filters;
+
+  const filteredEmployees = allEmployees.filter(emp => {
+    if (unit && emp.unit !== unit) return false;
+    if (category && emp.category !== category) return false;
+    if (level && emp.job_level !== level) return false;
+    return true;
+  });
+
+  const filteredEvaluations = allEvaluations.filter(ev => {
+    if (period && ev.period !== period) return false;
+    return true;
+  });
+
+  const submitted = filteredEvaluations.filter(e => e.status === 'submitted');
+  const submittedEmpIds = new Set(submitted.map(e => e.employee_id));
+
+  const base = filteredEmployees
+    .filter(emp => submittedEmpIds.has(emp.id))
+    .map(emp => {
+      const ev = submitted.find(e => e.employee_id === emp.id);
+      const evaluator = allProfiles.find(p => p.id === emp.evaluator_id);
+      return {
+        id: emp.id, name: emp.full_name, personnel_code: emp.personnel_code,
+        unit: emp.unit, position: emp.position, level: emp.job_level,
+        category: emp.category, evaluator_id: emp.evaluator_id,
+        evaluator_name: evaluator ? (evaluator.full_name || '—') : '—',
+        raw_score: Number(ev.final_score) || 0,
+        perf_avg: Number(ev.func_avg) || 0,
+        beh_avg: Number(ev.beh_avg) || 0,
+        period: ev.period, submitted_at: ev.submitted_at
+      };
+    });
+
+  const orgMean = base.length > 0 ? base.reduce((a,b) => a + b.raw_score, 0) / base.length : 0;
+
+  const evGroups = {};
+  base.forEach(r => {
+    if (!evGroups[r.evaluator_id]) evGroups[r.evaluator_id] = [];
+    evGroups[r.evaluator_id].push(r);
+  });
+
+  const evaluatorStats = {};
+  Object.keys(evGroups).forEach(evId => {
+    const group = evGroups[evId];
+    const n = group.length;
+    const mean = group.reduce((a,b) => a + b.raw_score, 0) / n;
+    let variance = 0;
+    if (n > 1) variance = group.reduce((a,b) => a + Math.pow(b.raw_score - mean, 2), 0) / (n - 1);
+    const std = Math.sqrt(variance);
+    const pctAbove = group.filter(r => r.raw_score > HIGH_SCORE).length / n * 100;
+    const pctBelow = group.filter(r => r.raw_score < LOW_SCORE).length / n * 100;
+    const shrunkBias = (n * (mean - orgMean)) / (n + K_SHRINK);
+    let classification = 'کالیبره';
+    if (mean > THRESH_LENIENT) classification = 'آسان‌گیر';
+    else if (mean < THRESH_STRICT) classification = 'سخت‌گیر';
+    evaluatorStats[evId] = {
+      id: evId, name: group[0].evaluator_name, n,
+      mean: +mean.toFixed(2), std: +std.toFixed(2),
+      pctAbove75: +pctAbove.toFixed(2), pctBelow60: +pctBelow.toFixed(2),
+      shrunkBias: +shrunkBias.toFixed(2), classification
+    };
+  });
+
+  base.forEach(r => {
+    const stat = evaluatorStats[r.evaluator_id];
+    r.adjusted_score = +(r.raw_score - stat.shrunkBias).toFixed(2);
+    r.delta = +(r.adjusted_score - r.raw_score).toFixed(2);
+    r.confidence = stat.n >= 6 ? 'بالا' : stat.n >= 3 ? 'متوسط' : 'کم';
+    r.evaluator_class = stat.classification;
+  });
+
+  const scores = base.map(r => r.raw_score);
+  const sorted = [...scores].sort((a,b) => a-b);
+  const mean = scores.length > 0 ? scores.reduce((a,b) => a+b, 0) / scores.length : 0;
+  const median = sorted.length === 0 ? 0
+    : (sorted.length % 2 === 0
+      ? (sorted[sorted.length/2-1] + sorted[sorted.length/2]) / 2
+      : sorted[Math.floor(sorted.length/2)]);
+  let variance = 0;
+  if (scores.length > 1) variance = scores.reduce((a,b) => a + Math.pow(b - mean, 2), 0) / (scores.length - 1);
+  const std = Math.sqrt(variance);
+
+  const bins = [0,0,0,0,0];
+  scores.forEach(s => {
+    if (s < 50) bins[0]++; else if (s < 60) bins[1]++;
+    else if (s < 75) bins[2]++; else if (s < 90) bins[3]++; else bins[4]++;
+  });
+
+  let submittedCnt = 0, draftCnt = 0, noneCnt = 0;
+  filteredEmployees.forEach(emp => {
+    const ev = filteredEvaluations.find(e => e.employee_id === emp.id);
+    if (!ev) noneCnt++;
+    else if (ev.status === 'submitted') submittedCnt++;
+    else if (ev.status === 'draft') draftCnt++;
+  });
+  const totalEmp = filteredEmployees.length;
+  const completionRate = totalEmp > 0 ? (submittedCnt / totalEmp * 100) : 0;
+
+  const unitGroups = {};
+  base.forEach(r => {
+    if (!r.unit) return;
+    if (!unitGroups[r.unit]) unitGroups[r.unit] = [];
+    unitGroups[r.unit].push(r);
+  });
+  const unitStats = Object.keys(unitGroups).map(u => ({
+    unit: u, n: unitGroups[u].length,
+    mean: +(unitGroups[u].reduce((a,b) => a+b.raw_score, 0) / unitGroups[u].length).toFixed(2),
+    adjustedMean: +(unitGroups[u].reduce((a,b) => a+b.adjusted_score, 0) / unitGroups[u].length).toFixed(2)
+  })).sort((a,b) => b.mean - a.mean);
+
+  const compMap = {};
+  filteredEmployees.forEach(emp => {
+    if (!emp.evaluator_id) return;
+    if (!compMap[emp.evaluator_id]){
+      const prof = allProfiles.find(p => p.id === emp.evaluator_id);
+      compMap[emp.evaluator_id] = { name: prof ? prof.full_name : '—', total: 0, submitted: 0 };
+    }
+    compMap[emp.evaluator_id].total++;
+    const ev = filteredEvaluations.find(e => e.employee_id === emp.id);
+    if (ev && ev.status === 'submitted') compMap[emp.evaluator_id].submitted++;
+  });
+  const completionByEval = Object.keys(compMap).map(id => ({
+    id, name: compMap[id].name, total: compMap[id].total, submitted: compMap[id].submitted,
+    rate: +(compMap[id].submitted / compMap[id].total * 100).toFixed(2)
+  })).sort((a,b) => b.total - a.total);
+
+  const validGroups = Object.values(evGroups).filter(g => g.length >= MIN_N_ICC);
+  let icc = null;
+  if (validGroups.length >= 3){
+    const k = validGroups.length;
+    const N = validGroups.reduce((a,g) => a + g.length, 0);
+    const grandMean = validGroups.reduce((a,g) => a + g.reduce((x,y) => x+y.raw_score, 0), 0) / N;
+    let SSB = 0;
+    validGroups.forEach(g => {
+      const gm = g.reduce((a,b) => a+b.raw_score, 0) / g.length;
+      SSB += g.length * Math.pow(gm - grandMean, 2);
+    });
+    const MSB = SSB / (k - 1);
+    let SSW = 0;
+    validGroups.forEach(g => {
+      const gm = g.reduce((a,b) => a+b.raw_score, 0) / g.length;
+      g.forEach(r => { SSW += Math.pow(r.raw_score - gm, 2); });
+    });
+    const MSW = SSW / (N - k);
+    const sumNsq = validGroups.reduce((a,g) => a + g.length * g.length, 0);
+    const kBar = (N - sumNsq / N) / (k - 1);
+    icc = (MSB - MSW) / (MSB + (kBar - 1) * MSW);
+    icc = Math.max(0, Math.min(1, icc));
+  }
+
+  const pctAbove75Raw = base.length > 0 ? base.filter(r => r.raw_score > HIGH_SCORE).length / base.length * 100 : 0;
+  const pctAbove75Adj = base.length > 0 ? base.filter(r => r.adjusted_score > HIGH_SCORE).length / base.length * 100 : 0;
+  const pctBelow60Raw = base.length > 0 ? base.filter(r => r.raw_score < LOW_SCORE).length / base.length * 100 : 0;
+  const pctBelow60Adj = base.length > 0 ? base.filter(r => r.adjusted_score < LOW_SCORE).length / base.length * 100 : 0;
+  const avgAdjusted = base.length > 0 ? base.reduce((a,b) => a + b.adjusted_score, 0) / base.length : 0;
+
+  const byDelta = [...base].sort((a,b) => b.delta - a.delta);
+  const topBoosted = byDelta.slice(0, 10);
+  const topReduced = byDelta.slice(-10).reverse();
+
+  return {
+    base, totalEmp, submittedCnt, draftCnt, noneCnt, completionRate,
+    mean, median, std,
+    min: scores.length ? Math.min(...scores) : 0,
+    max: scores.length ? Math.max(...scores) : 0,
+    avgAdjusted, pctAbove75Raw, pctAbove75Adj, pctBelow60Raw, pctBelow60Adj,
+    bins, unitStats, evaluatorStats: Object.values(evaluatorStats),
+    completionByEval, icc, validGroupsCount: validGroups.length,
+    orgMean, topBoosted, topReduced
+  };
+}
+
+// ============================================================
+// DASHBOARD — Render
+// ============================================================
+function renderOverview(){
+  document.getElementById('overviewLoading').classList.add('hidden');
+  document.getElementById('overviewContent').classList.remove('hidden');
+  const c = dashComputed;
+
+  document.getElementById('dashKpiGrid').innerHTML = `
+    <div class="kpi blue"><div class="kpi-label">نرخ تکمیل</div><div class="kpi-value">${pct(c.completionRate)}</div><div class="kpi-sub"><span>ارسال‌شده: <b>${c.submittedCnt}</b></span><span>کل: <b>${c.totalEmp}</b></span></div></div>
+    <div class="kpi purple"><div class="kpi-label">میانگین خام</div><div class="kpi-value">${fmt(c.mean)}</div><div class="kpi-sub"><span>میانه: <b>${fmt(c.median)}</b></span></div></div>
+    <div class="kpi teal"><div class="kpi-label">میانگین تعدیل‌شده</div><div class="kpi-value">${fmt(c.avgAdjusted)}</div><div class="kpi-sub"><span>Δ: <b>${fmt(c.avgAdjusted - c.mean)}</b></span></div></div>
+    <div class="kpi green"><div class="kpi-label">بالای ۷۵ (خام)</div><div class="kpi-value">${pct(c.pctAbove75Raw)}</div><div class="kpi-sub"><span>تعدیل‌شده: <b>${pct(c.pctAbove75Adj)}</b></span></div></div>
+    <div class="kpi red"><div class="kpi-label">زیر ۶۰ (خام)</div><div class="kpi-value">${pct(c.pctBelow60Raw)}</div><div class="kpi-sub"><span>تعدیل‌شده: <b>${pct(c.pctBelow60Adj)}</b></span></div></div>
+    <div class="kpi yellow"><div class="kpi-label">انحراف معیار</div><div class="kpi-value">${fmt(c.std)}</div><div class="kpi-sub"><span>حداقل: <b>${fmt(c.min)}</b></span><span>حداکثر: <b>${fmt(c.max)}</b></span></div></div>
+    <div class="kpi"><div class="kpi-label">ICC (تأثیر ارزیاب)</div><div class="kpi-value">${c.icc !== null ? (c.icc * 100).toFixed(1) + '٪' : '—'}</div><div class="kpi-sub"><span>${c.icc !== null ? 'واریانس نمرات مربوط به ارزیاب' : 'داده کافی نیست'}</span></div></div>
+  `;
+
+  const ib = document.getElementById('dashInfoBox');
+  if (c.icc !== null && c.icc > 0.5){
+    ib.className = 'info-box warn';
+    ib.innerHTML = `<b>⚠️ توجه:</b> ICC = ${(c.icc*100).toFixed(1)}٪ نشان می‌دهد سهم قابل‌توجهی از واریانس نمرات به ارزیاب (نه به خود فرد) برمی‌گردد. نمرات تعدیل‌شده معیار منصفانه‌تری برای مقایسه هستند.`;
+  } else {
+    ib.className = 'info-box';
+    ib.innerHTML = `<b>ℹ️ راهنما:</b> اعداد خام و تعدیل‌شده در کنار هم نمایش داده می‌شوند. «تعدیل» یعنی نمره هر فرد نسبت به سختی‌گیری/آسان‌گیری ارزیابش تصحیح می‌شود. رتبه‌بندی رسمی بر اساس نمره تعدیل‌شده است.`;
+  }
+
+  renderHistogram(c);
+  renderStatus(c);
+  renderUnits(c);
+  renderCompletion(c);
+  renderImpact(c);
+}
+
+function renderHistogram(c){
+  if (charts.histogram) charts.histogram.destroy();
+  const ctx = document.getElementById('chartHistogram');
+  if (!ctx) return;
+  charts.histogram = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['< ۵۰','۵۰-۶۰','۶۰-۷۵','۷۵-۹۰','۹۰-۱۰۰'],
+      datasets: [{ label: 'تعداد افراد', data: c.bins, backgroundColor: ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6'], borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.parsed.y} نفر` } } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+}
+
+function renderStatus(c){
+  if (charts.status) charts.status.destroy();
+  const ctx = document.getElementById('chartStatus');
+  if (!ctx) return;
+  charts.status = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['ارسال‌شده','پیش‌نویس','شروع‌نشده'],
+      datasets: [{ data: [c.submittedCnt, c.draftCnt, c.noneCnt], backgroundColor: ['#10b981','#f59e0b','#94a3b8'], borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed} نفر` } } }
+    }
+  });
+}
+
+function renderUnits(c){
+  if (charts.units) charts.units.destroy();
+  const ctx = document.getElementById('chartUnits');
+  if (!ctx) return;
+  const sorted = [...c.unitStats].reverse();
+  charts.units = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(u => u.unit),
+      datasets: [
+        { label: 'خام', data: sorted.map(u => u.mean), backgroundColor: '#3b82f6', borderRadius: 4 },
+        { label: 'تعدیل‌شده', data: sorted.map(u => u.adjustedMean), backgroundColor: '#0d9488', borderRadius: 4 }
+      ]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.x.toFixed(2)}` } } },
+      scales: { x: { beginAtZero: true, max: 100 } }
+    }
+  });
+}
+
+function renderCompletion(c){
+  if (charts.completion) charts.completion.destroy();
+  const ctx = document.getElementById('chartCompletion');
+  if (!ctx) return;
+  const sorted = c.completionByEval.slice(0, 15);
+  charts.completion = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e => `${e.name} (${e.submitted}/${e.total})`),
+      datasets: [{
+        label: 'نرخ تکمیل', data: sorted.map(e => e.rate),
+        backgroundColor: sorted.map(e => e.rate >= 90 ? '#10b981' : e.rate >= 50 ? '#3b82f6' : e.rate > 0 ? '#f59e0b' : '#ef4444'),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.parsed.x.toFixed(1)}٪` } } },
+      scales: { x: { beginAtZero: true, max: 100 } }
+    }
+  });
+}
+
+function renderImpact(c){
+  const boosted = c.topBoosted.filter(r => r.delta > 0.5);
+  const reduced = c.topReduced.filter(r => r.delta < -0.5);
+  const renderList = (list) => {
+    if (!list.length) return '<div class="impact-item" style="justify-content:center;color:#94a3b8">موردی نیست</div>';
+    return list.map(r => {
+      const cls = r.delta > 0 ? 'pos' : 'neg';
+      const sign = r.delta > 0 ? '+' : '';
+      return `<div class="impact-item">
+        <div style="flex:1;min-width:0">
+          <div class="name">${escapeHtml(r.name)}</div>
+          <div class="meta">${escapeHtml(r.evaluator_name)} (${fmt(r.raw_score, 1)} → ${fmt(r.adjusted_score, 1)})</div>
+        </div>
+        <span class="delta ${cls}">${sign}${fmt(r.delta, 1)}</span>
+      </div>`;
+    }).join('');
+  };
+  document.getElementById('boostedList').innerHTML = renderList(boosted);
+  document.getElementById('reducedList').innerHTML = renderList(reduced);
+}
 </script>
 </body>
 </html>
