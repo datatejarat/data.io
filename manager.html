@@ -557,6 +557,11 @@
   <div class="info-box">
     <b>ℹ️ راهنما:</b> این داشبورد نشان می‌دهد هر فرد نسبت به هم‌تیمی‌هایش (تحت همان ارزیاب) و نسبت به کل سازمان چه جایگاهی دارد. «Δ» تفاوت نمره تعدیل‌شده با خام است — Δ مثبت یعنی فرد تحت مدیر سخت‌گیر بوده و ارزشش بالاتر از نمره خام است.
   </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+    <button class="btn btn-solid" id="exportIndBtn" onclick="exportIndividualExcel()" style="font-size:13px;padding:10px 18px">
+      📥 خروجی اکسل (خام + تعدیل)
+    </button>
+  </div>
 
   <div class="kpi-grid" id="indKpiGrid"></div>
 
@@ -2490,6 +2495,176 @@ function renderIndTables(c, base){
       <td><span class="rank-chip down">${fmt(r.delta, 1)}</span></td>
     </tr>`;
   }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">موردی یافت نشد</td></tr>';
+}
+// ============================================================
+// Excel Export — Individual Scores (Raw + Adjusted)
+// ============================================================
+function exportIndividualExcel(){
+  const btn = document.getElementById('exportIndBtn');
+  const c = dashComputed;
+  if (!c || !c.base || !c.base.length){
+    alert('داده‌ای برای خروجی وجود ندارد.');
+    return;
+  }
+
+  btn.disabled = true;
+  const origText = btn.innerHTML;
+  btn.innerHTML = '⏳ در حال آماده‌سازی...';
+
+  try {
+    const base = c.base;
+
+    // محاسبه رتبه‌ها اگر renderIndividual اجرا نشده باشد
+    const sortedRaw = [...base].sort((a,b) => b.raw_score - a.raw_score);
+    sortedRaw.forEach((r,i) => { r.rank_raw = i + 1; });
+    const sortedAdj = [...base].sort((a,b) => b.adjusted_score - a.adjusted_score);
+    sortedAdj.forEach((r,i) => { r.rank_adjusted = i + 1; });
+    base.forEach(r => { r.rank_change = r.rank_raw - r.rank_adjusted; });
+
+    // محاسبه team_dev و confidence
+    const statsMap = {};
+    (c.evaluatorStats || []).forEach(s => { statsMap[s.id] = s; });
+    base.forEach(r => {
+      const s = statsMap[r.evaluator_id];
+      r.team_mean = s ? s.mean : r.raw_score;
+      r.team_dev = +(r.raw_score - r.team_mean).toFixed(2);
+      if (!r.confidence){
+        r.confidence = (s && s.n >= 6) ? 'بالا' : (s && s.n >= 3) ? 'متوسط' : 'کم';
+      }
+    });
+
+    // مرتب‌سازی نهایی بر اساس رتبه تعدیل‌شده
+    const sorted = [...base].sort((a,b) => a.rank_adjusted - b.rank_adjusted);
+
+    // فیلترهای فعلی برای عنوان
+    const filterParts = [];
+    const pF = document.getElementById('dashFilterPeriod').value;
+    const uF = document.getElementById('dashFilterUnit').value;
+    const cF = document.getElementById('dashFilterCategory').value;
+    const lF = document.getElementById('dashFilterLevel').value;
+    if (pF) filterParts.push(`دوره: ${pF}`);
+    if (uF) filterParts.push(`واحد: ${uF}`);
+    if (cF) filterParts.push(`دسته: ${cF === 'technical' ? 'فنی' : 'ستادی'}`);
+    if (lF) filterParts.push(`سطح: ${lF}`);
+    const filterTxt = filterParts.length ? `  |  ${filterParts.join('  |  ')}` : '  |  همه';
+
+    // شیت ۱: داده اصلی
+    const aoa = [];
+    aoa.push(['گزارش امتیازات خام و تعدیل‌شده — ارزیابی عملکرد BARS']);
+    aoa.push([`تاریخ: ${getTodayShamsi()}  |  تعداد افراد: ${sorted.length}${filterTxt}`]);
+    aoa.push([]);
+    aoa.push([
+      'رتبه (تعدیل‌شده)',
+      'رتبه (خام)',
+      'تغییر رتبه',
+      'نام و نام خانوادگی',
+      'کد پرسنلی',
+      'واحد سازمانی',
+      'عنوان شغلی',
+      'سطح سازمانی',
+      'دسته شغلی',
+      'ارزیاب (مدیر مستقیم)',
+      'طبقه ارزیاب',
+      'نمره خام',
+      'نمره تعدیل‌شده',
+      'Δ (تعدیل − خام)',
+      'میانگین عملکردی',
+      'میانگین رفتاری',
+      'انحراف از تیم',
+      'اطمینان تعدیل',
+      'دوره ارزیابی'
+    ]);
+
+    sorted.forEach(r => {
+      const catLabel = r.category === 'technical' ? 'فنی' : 'ستادی';
+      const rankChange = r.rank_change;
+      const rankChangeTxt = rankChange > 0 ? `+${rankChange}` : rankChange < 0 ? `${rankChange}` : '۰';
+      aoa.push([
+        r.rank_adjusted,
+        r.rank_raw,
+        rankChangeTxt,
+        r.name,
+        r.personnel_code || '',
+        r.unit || '',
+        r.position || '',
+        r.level || '',
+        catLabel,
+        r.evaluator_name,
+        r.evaluator_class || '',
+        r.raw_score,
+        r.adjusted_score,
+        r.delta,
+        r.perf_avg,
+        r.beh_avg,
+        r.team_dev,
+        r.confidence || '',
+        r.period || ''
+      ]);
+    });
+
+    // شیت ۲: راهنما
+    const guide = [];
+    guide.push(['راهنمای گزارش']);
+    guide.push([]);
+    guide.push(['ستون', 'توضیح']);
+    guide.push(['رتبه (تعدیل‌شده)', 'رتبه‌بندی رسمی سیستم — بر اساس نمره تعدیل‌شده']);
+    guide.push(['رتبه (خام)', 'رتبه‌بندی بدون تصحیح سوگیری (برای مقایسه)']);
+    guide.push(['تغییر رتبه', 'مثبت = بهبود رتبه با تعدیل | منفی = افت رتبه با تعدیل']);
+    guide.push(['نمره خام', 'میانگین وزنی نهایی از مقیاس ۱۰۰ بدون تصحیح']);
+    guide.push(['نمره تعدیل‌شده', 'نمره پس از تصحیح سوگیری ارزیاب با روش Shrinkage']);
+    guide.push(['Δ', 'تفاوت نمره تعدیل‌شده با نمره خام']);
+    guide.push(['میانگین عملکردی', 'میانگین وزنی شاخص‌های عملکردی از مقیاس ۱۰۰']);
+    guide.push(['میانگین رفتاری', 'میانگین وزنی شاخص‌های رفتاری از مقیاس ۱۰۰']);
+    guide.push(['انحراف از تیم', 'فاصله نمره خام فرد از میانگین تیم همان ارزیاب']);
+    guide.push(['طبقه ارزیاب', 'آسان‌گیر (>۷۵) | کالیبره (۵۵-۷۵) | سخت‌گیر (<۵۵)']);
+    guide.push(['اطمینان تعدیل', 'بالا: n≥۶ | متوسط: n ۳-۵ | کم: n<۳ (اثر تعدیل کمتر قابل اتکاست)']);
+    guide.push([]);
+    guide.push(['پارامترهای تعدیل']);
+    guide.push(['anchor_normal', String(ANCHOR_NORMAL)]);
+    guide.push(['k (shrinkage)', String(K_SHRINK)]);
+    guide.push(['آستانه سخت‌گیر', String(THRESH_STRICT)]);
+    guide.push(['آستانه آسان‌گیر', String(THRESH_LENIENT)]);
+    guide.push([]);
+    guide.push(['نکته مهم']);
+    guide.push(['ICC سازمانی: ' + (c.icc !== null ? (c.icc*100).toFixed(1) + '٪' : 'قابل محاسبه نیست')]);
+    guide.push(['میانگین سازمانی: ' + c.orgMean.toFixed(2)]);
+
+    // ساخت Workbook
+    const wb = XLSX.utils.book_new();
+
+    const ws1 = XLSX.utils.aoa_to_sheet(aoa);
+    ws1['!cols'] = [
+      {wch:14},{wch:10},{wch:12},{wch:28},{wch:12},{wch:28},{wch:28},{wch:14},{wch:10},
+      {wch:24},{wch:12},{wch:12},{wch:14},{wch:14},{wch:14},{wch:14},{wch:16},{wch:12},{wch:14}
+    ];
+    ws1['!merges'] = [
+      {s:{r:0,c:0}, e:{r:0,c:18}},
+      {s:{r:1,c:0}, e:{r:1,c:18}}
+    ];
+    ws1['!freeze'] = {xSplit:0, ySplit:3};
+    XLSX.utils.book_append_sheet(wb, ws1, 'امتیازات خام و تعدیل');
+
+    const ws2 = XLSX.utils.aoa_to_sheet(guide);
+    ws2['!cols'] = [{wch:28},{wch:80}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'راهنما');
+
+    // نام فایل
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    const nameParts = [];
+    if (uF) nameParts.push(uF.replace(/\s+/g,'_'));
+    const suffix = nameParts.length ? '_' + nameParts.join('_') : '_کل';
+    XLSX.writeFile(wb, `امتیازات_خام_تعدیل${suffix}_${stamp}.xlsx`);
+
+    showToast(`✓ فایل اکسل با ${sorted.length} نفر دانلود شد`, 'success');
+
+  } catch (err){
+    console.error(err);
+    alert('خطا در تولید فایل اکسل: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origText;
+  }
 }
 // ============================================================
 // DASHBOARD 4 — ریسک و اقدام
